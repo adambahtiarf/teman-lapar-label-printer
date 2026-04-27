@@ -97,6 +97,11 @@ export function LabelPrintView({
           html,
           body {
             background: white !important;
+            width: ${LABEL_PRINT_CONFIG.widthMm}mm !important;
+            height: ${LABEL_PRINT_CONFIG.heightMm}mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -109,7 +114,7 @@ export function LabelPrintView({
           }
 
           .label-ticket {
-            position: absolute;
+            position: fixed;
             left: 0;
             top: 0;
             border: 0;
