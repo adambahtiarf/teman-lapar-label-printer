@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { formatShortDate } from "@/lib/format";
 import type { Order, OrderItem } from "@/lib/types";
 
@@ -12,7 +12,7 @@ const LABEL_PRINT_CONFIG = {
   customerFontSizePt: 7,
   menuFontSizePt: 8,
   gapMm: 0.6,
-  autoPrintDelayMs: 300,
+  autoPrintDelayMs: 800,
 } as const;
 
 export function LabelPrintView({
@@ -22,13 +22,33 @@ export function LabelPrintView({
   item: OrderItem;
   order: Order;
 }) {
+  const [printState, setPrintState] = useState<"idle" | "printing" | "done">(
+    "idle",
+  );
+  const hasPrintedRef = useRef(false);
+
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => window.print(),
-      LABEL_PRINT_CONFIG.autoPrintDelayMs,
-    );
+    const handleAfterPrint = () => setPrintState("done");
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, []);
+
+  useEffect(() => {
+    if (hasPrintedRef.current) return;
+    hasPrintedRef.current = true;
+
+    const timer = window.setTimeout(() => {
+      setPrintState("printing");
+      window.print();
+    }, LABEL_PRINT_CONFIG.autoPrintDelayMs);
+
     return () => window.clearTimeout(timer);
   }, []);
+
+  const handleManualPrint = () => {
+    setPrintState("printing");
+    window.print();
+  };
 
   const labelStyle = {
     "--label-width": `${LABEL_PRINT_CONFIG.widthMm}mm`,
@@ -41,7 +61,7 @@ export function LabelPrintView({
   } as CSSProperties;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full flex-col items-center bg-white p-4 text-black">
+    <main className="mx-auto flex min-h-dvh w-full flex-col items-center gap-4 bg-white p-4 text-black">
       <section
         className="label-ticket flex flex-col overflow-hidden font-mono leading-tight"
         style={labelStyle}
@@ -55,6 +75,13 @@ export function LabelPrintView({
         ) : null}
         {item.notes ? <p>{item.notes}</p> : null}
       </section>
+      <button
+        onClick={handleManualPrint}
+        disabled={printState === "printing"}
+        className="no-print rounded-md bg-black px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
+      >
+        {printState === "done" ? "Print Again" : "Print"}
+      </button>
       <style jsx global>{`
         @page {
           size: ${LABEL_PRINT_CONFIG.widthMm}mm ${LABEL_PRINT_CONFIG.heightMm}mm;
@@ -94,6 +121,10 @@ export function LabelPrintView({
         }
 
         @media print {
+          .no-print {
+            display: none !important;
+          }
+
           html,
           body {
             background: white !important;

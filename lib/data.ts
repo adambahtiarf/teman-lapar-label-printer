@@ -8,7 +8,12 @@ function todayKey() {
 }
 
 function orderOptions(options: Attribute["attribute_options"]) {
-  return [...(options ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+  return [...(options ?? [])].sort((a, b) => {
+    // sort_order of 0 means last
+    const aOrder = a.sort_order === 0 ? Infinity : a.sort_order
+    const bOrder = b.sort_order === 0 ? Infinity : b.sort_order
+    return aOrder - bOrder
+  })
 }
 
 function orderAttributes(attributes: Attribute[]) {
