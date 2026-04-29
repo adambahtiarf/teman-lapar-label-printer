@@ -142,7 +142,11 @@ export default async function SettingsPage() {
           <CardTitle>General</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <p>Label route uses a 40mm x 20mm print page.</p>
+          <p>Label route uses a 40mm x 30mm print page.</p>
+          <p>
+            NIIMBOT direct print is available from the label page with Bluetooth
+            and USB Serial browser support.
+          </p>
           <p>
             Order code prefixes:{" "}
             {ORDER_CODE_PREFIX_INFO.map((item) => `${item.code} = ${item.label}`).join(", ")}.

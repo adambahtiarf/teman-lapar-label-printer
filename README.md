@@ -3,6 +3,15 @@
 Mobile-first Next.js App Router app for simple order label management:
 create order, add items, print one thermal label per click, and complete the order.
 
+## Printer Support
+
+- Label size is configured for `40 x 30 mm`.
+- Browser print fallback is available on `/print/label/[itemId]`.
+- Direct NIIMBOT printing is integrated with `@mmote/niimbluelib`.
+- `NIIMBOT B1`: use Bluetooth from a Chromium-based browser with Web Bluetooth.
+- `NIIMBOT B31`: use Bluetooth or USB Serial from a supported Chromium-based desktop browser.
+- iPhone/iPad browsers generally do not expose Web Bluetooth reliably, so use the browser print fallback there.
+
 ## Setup
 
 1. Add Supabase environment variables:
@@ -53,6 +62,7 @@ Open [http://localhost:3000](http://localhost:3000).
 7. Keep printing until `printed_count >= qty`, then confirm reprint warning appears.
 8. Complete the order and verify it appears in `/orders` filters.
 9. Confirm `/print/label/[itemId]` opens a minimal thermal print page.
+10. Use `Bluetooth` or `USB Serial` on the label page to print directly to a NIIMBOT printer when the browser supports it.
 
 ## Checks
 

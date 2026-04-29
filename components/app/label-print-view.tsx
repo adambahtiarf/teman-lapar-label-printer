@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
+import { NiimbotPrintPanel } from "@/components/app/niimbot-print-panel";
 import { formatShortDate } from "@/lib/format";
 import type { Order, OrderItem } from "@/lib/types";
 
 const LABEL_PRINT_CONFIG = {
   widthMm: 40,
-  heightMm: 20,
+  heightMm: 30,
   paddingMm: 1.5,
   fontSizePt: 6.5,
   customerFontSizePt: 7,
   menuFontSizePt: 8,
   gapMm: 0.6,
-  autoPrintDelayMs: 800,
 } as const;
 
 export function LabelPrintView({
@@ -22,34 +22,6 @@ export function LabelPrintView({
   item: OrderItem;
   order: Order;
 }) {
-  const [printState, setPrintState] = useState<"idle" | "printing" | "done">(
-    "idle",
-  );
-  const hasPrintedRef = useRef(false);
-
-  useEffect(() => {
-    const handleAfterPrint = () => setPrintState("done");
-    window.addEventListener("afterprint", handleAfterPrint);
-    return () => window.removeEventListener("afterprint", handleAfterPrint);
-  }, []);
-
-  useEffect(() => {
-    if (hasPrintedRef.current) return;
-    hasPrintedRef.current = true;
-
-    const timer = window.setTimeout(() => {
-      setPrintState("printing");
-      window.print();
-    }, LABEL_PRINT_CONFIG.autoPrintDelayMs);
-
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  const handleManualPrint = () => {
-    setPrintState("printing");
-    window.print();
-  };
-
   const labelStyle = {
     "--label-width": `${LABEL_PRINT_CONFIG.widthMm}mm`,
     "--label-height": `${LABEL_PRINT_CONFIG.heightMm}mm`,
@@ -61,27 +33,42 @@ export function LabelPrintView({
   } as CSSProperties;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full flex-col items-center gap-4 bg-white p-4 text-black">
-      <section
-        className="label-ticket flex flex-col overflow-hidden font-mono leading-tight"
-        style={labelStyle}
-      >
-        <p>No: {order.order_code}</p>
-        <p>{formatShortDate(order.created_at)}</p>
-        <p className="label-customer">{order.customer_name.toUpperCase()}</p>
-        <p className="label-menu font-bold">{item.menu_name}</p>
-        {item.selected_attribute_labels.length ? (
-          <p>{item.selected_attribute_labels.join(" / ")}</p>
-        ) : null}
-        {item.notes ? <p>{item.notes}</p> : null}
+    <main className="mx-auto flex min-h-dvh w-full max-w-120 flex-col bg-background px-4 pt-4 gap-5 ">
+      <section className="w-full">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+              Label Preview
+            </p>
+            <p className="mt-1 text-sm text-stone-600">
+              NIIMBOT label size `40 x 30 mm`
+            </p>
+          </div>
+          <div className="rounded-full border border-stone-200 px-3 py-1 text-xs font-medium text-stone-600">
+            {order.order_code}
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-center rounded bg-[linear-gradient(180deg,#fafaf9_0%,#f5f5f4_100%)] p-6">
+          <section
+            className="label-ticket flex flex-col overflow-hidden font-mono leading-tight shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+            style={labelStyle}
+          >
+            <p>No: {order.order_code}</p>
+            <p>{formatShortDate(order.created_at)}</p>
+            <p className="label-customer">
+              {order.customer_name.toUpperCase()}
+            </p>
+            <p className="label-menu font-bold">{item.menu_name}</p>
+            {item.selected_attribute_labels.length ? (
+              <p>{item.selected_attribute_labels.join(" / ")}</p>
+            ) : null}
+            {item.notes ? <p>{item.notes}</p> : null}
+          </section>
+        </div>
       </section>
-      <button
-        onClick={handleManualPrint}
-        disabled={printState === "printing"}
-        className="no-print rounded-md bg-black px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {printState === "done" ? "Print Again" : "Print"}
-      </button>
+
+      <NiimbotPrintPanel item={item} order={order} />
       <style jsx global>{`
         @page {
           size: ${LABEL_PRINT_CONFIG.widthMm}mm ${LABEL_PRINT_CONFIG.heightMm}mm;
@@ -116,39 +103,7 @@ export function LabelPrintView({
 
         @media screen {
           .label-ticket {
-            border: 1px dashed #d4d4d4;
-          }
-        }
-
-        @media print {
-          .no-print {
-            display: none !important;
-          }
-
-          html,
-          body {
-            background: white !important;
-            width: ${LABEL_PRINT_CONFIG.widthMm}mm !important;
-            height: ${LABEL_PRINT_CONFIG.heightMm}mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-          }
-
-          body * {
-            visibility: hidden;
-          }
-
-          .label-ticket,
-          .label-ticket * {
-            visibility: visible;
-          }
-
-          .label-ticket {
-            position: fixed;
-            left: 0;
-            top: 0;
-            border: 0;
+            border: 1px solid rgba(231, 229, 228, 0.95);
           }
         }
       `}</style>
