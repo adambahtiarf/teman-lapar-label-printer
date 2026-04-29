@@ -79,6 +79,7 @@ export function LabelPrintView({
           box-sizing: border-box;
           width: var(--label-width);
           height: var(--label-height);
+          justify-content: center;
           gap: var(--label-gap);
           padding: var(--label-padding);
           color: black;
