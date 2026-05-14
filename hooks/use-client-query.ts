@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useId, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 
 type QueryState<T> = {
@@ -23,6 +23,7 @@ export function useClientQuery<T>({
   queryFn: () => Promise<T>
   subscribeTo?: string[]
 }) {
+  const channelId = useId()
   const subscribeKey = [...subscribeTo].sort().join(",")
 
   const [state, setState] = useState<QueryState<T>>({
@@ -33,26 +34,26 @@ export function useClientQuery<T>({
 
   const runQuery = useCallback(
     async (showLoader: boolean) => {
-    if (!enabled) return
+      if (!enabled) return
 
-    if (showLoader) {
-      setState((current) => ({
-        data: current.data,
-        error: null,
-        isLoading: true,
-      }))
-    }
+      if (showLoader) {
+        setState((current) => ({
+          data: current.data,
+          error: null,
+          isLoading: true,
+        }))
+      }
 
-    try {
-      const data = await queryFn()
-      setState({ data, error: null, isLoading: false })
-    } catch (error: unknown) {
-      setState({
-        data: undefined,
-        error: toError(error),
-        isLoading: false,
-      })
-    }
+      try {
+        const data = await queryFn()
+        setState({ data, error: null, isLoading: false })
+      } catch (error: unknown) {
+        setState({
+          data: undefined,
+          error: toError(error),
+          isLoading: false,
+        })
+      }
     },
     [enabled, queryFn]
   )
@@ -62,7 +63,7 @@ export function useClientQuery<T>({
 
     const supabase = createClient()
     const channel = subscribeKey.length
-      ? supabase.channel(`client-query:${subscribeKey}`)
+      ? supabase.channel(`client-query:${channelId}:${subscribeKey}`)
       : null
 
     let cancelled = false
@@ -88,13 +89,13 @@ export function useClientQuery<T>({
       .split(",")
       .filter(Boolean)
       .forEach((table) => {
-      channel?.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        () => {
-          void runQuery(false)
-        }
-      )
+        channel?.on(
+          "postgres_changes",
+          { event: "*", schema: "public", table },
+          () => {
+            void runQuery(false)
+          }
+        )
       })
 
     channel?.subscribe()
@@ -105,7 +106,7 @@ export function useClientQuery<T>({
         void supabase.removeChannel(channel)
       }
     }
-  }, [enabled, queryFn, runQuery, subscribeKey])
+  }, [channelId, enabled, queryFn, runQuery, subscribeKey])
 
   return {
     ...state,
