@@ -3,11 +3,10 @@
 import { type CSSProperties } from "react";
 import { NiimbotPrintPanel } from "@/components/app/niimbot-print-panel";
 import { formatShortDate } from "@/lib/format";
-import type { Order, OrderItem } from "@/lib/types";
+import { resolvePaperSize } from "@/lib/settings";
+import type { Order, OrderItem, PaperSize } from "@/lib/types";
 
-const LABEL_PRINT_CONFIG = {
-  widthMm: 40,
-  heightMm: 30,
+const BASE_LABEL_PRINT_CONFIG = {
   paddingMm: 1.5,
   fontSizePt: 6.5,
   customerFontSizePt: 7,
@@ -18,18 +17,21 @@ const LABEL_PRINT_CONFIG = {
 export function LabelPrintView({
   item,
   order,
+  paperSize,
 }: {
   item: OrderItem;
   order: Order;
+  paperSize: PaperSize | null;
 }) {
+  const currentPaperSize = resolvePaperSize(paperSize)
   const labelStyle = {
-    "--label-width": `${LABEL_PRINT_CONFIG.widthMm}mm`,
-    "--label-height": `${LABEL_PRINT_CONFIG.heightMm}mm`,
-    "--label-padding": `${LABEL_PRINT_CONFIG.paddingMm}mm`,
-    "--label-font-size": `${LABEL_PRINT_CONFIG.fontSizePt}pt`,
-    "--label-customer-font-size": `${LABEL_PRINT_CONFIG.customerFontSizePt}pt`,
-    "--label-menu-font-size": `${LABEL_PRINT_CONFIG.menuFontSizePt}pt`,
-    "--label-gap": `${LABEL_PRINT_CONFIG.gapMm}mm`,
+    "--label-width": `${currentPaperSize.widthMm}mm`,
+    "--label-height": `${currentPaperSize.heightMm}mm`,
+    "--label-padding": `${BASE_LABEL_PRINT_CONFIG.paddingMm}mm`,
+    "--label-font-size": `${BASE_LABEL_PRINT_CONFIG.fontSizePt}pt`,
+    "--label-customer-font-size": `${BASE_LABEL_PRINT_CONFIG.customerFontSizePt}pt`,
+    "--label-menu-font-size": `${BASE_LABEL_PRINT_CONFIG.menuFontSizePt}pt`,
+    "--label-gap": `${BASE_LABEL_PRINT_CONFIG.gapMm}mm`,
   } as CSSProperties;
 
   return (
@@ -41,7 +43,7 @@ export function LabelPrintView({
               Label Preview
             </p>
             <p className="mt-1 text-sm text-stone-600">
-              NIIMBOT label size `40 x 30 mm`
+              {currentPaperSize.label} `({currentPaperSize.widthMm} x {currentPaperSize.heightMm} mm)`
             </p>
           </div>
           <div className="rounded-full border border-stone-200 px-3 py-1 text-xs font-medium text-stone-600">
@@ -68,10 +70,10 @@ export function LabelPrintView({
         </div>
       </section>
 
-      <NiimbotPrintPanel item={item} order={order} />
+      <NiimbotPrintPanel item={item} order={order} paperSize={paperSize} />
       <style jsx global>{`
         @page {
-          size: ${LABEL_PRINT_CONFIG.widthMm}mm ${LABEL_PRINT_CONFIG.heightMm}mm;
+          size: ${currentPaperSize.widthMm}mm ${currentPaperSize.heightMm}mm;
           margin: 0;
         }
 

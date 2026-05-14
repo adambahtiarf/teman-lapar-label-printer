@@ -1,6 +1,7 @@
 export type OrderType = "offline" | "online"
 export type Platform = "GOJ" | "GRB" | "SHP"
 export type OrderStatus = "draft" | "in_progress" | "completed"
+export type OrderNumberDatePattern = "YYMMDD" | "YYYYMMDD" | "DDMMYY"
 
 export type AttributeOption = {
   id: string
@@ -17,6 +18,30 @@ export type Attribute = {
   slug: string
   is_active: boolean
   attribute_options: AttributeOption[]
+}
+
+export type PaperSize = {
+  id: string
+  name: string
+  width_mm: number
+  height_mm: number
+  is_active: boolean
+  is_default: boolean
+}
+
+export type OrderNumberFormat = {
+  id: string
+  name: string
+  offline_prefix: string
+  goj_prefix: string
+  grab_prefix: string
+  shopee_prefix: string
+  date_pattern: OrderNumberDatePattern
+  sequence_padding: number
+  separator: string
+  include_random_suffix: boolean
+  is_active: boolean
+  is_default: boolean
 }
 
 export type MenuAttribute = {

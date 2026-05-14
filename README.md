@@ -21,15 +21,16 @@ NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-2. Run the SQL migration manually in Supabase SQL Editor:
+2. Run the SQL migrations manually in Supabase SQL Editor, in order:
 
 ```text
 supabase/migrations/202604270001_order_label_printing_mvp.sql
+supabase/migrations/202604290001_settings_management.sql
 ```
 
-The migration creates the tables, indexes, updated-at triggers, order-code function,
+The migrations create the tables, indexes, updated-at triggers, order-code function,
 RLS policies for authenticated users, and seed attributes for Sugar Level, Ice Level,
-Spice Level, and Size.
+Spice Level, and Size, plus configurable paper sizes and order number formats.
 
 3. Make sure the browser has a valid Supabase Auth session. This MVP intentionally
 does not include login UI. Without a session, Supabase uses the anon role and RLS
@@ -39,6 +40,7 @@ For local-only demos without login, run this second SQL file in Supabase SQL Edi
 
 ```text
 supabase/migrations/202604270002_enable_anon_demo_access.sql
+supabase/migrations/202604290002_enable_anon_access_to_settings_management.sql
 ```
 
 Do not run the demo anon access SQL in production.
@@ -53,16 +55,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Manual Test Flow
 
-1. Open `/settings` and confirm seeded attributes are visible.
+1. Open `/settings` and confirm `Attributes`, `Paper Sizes`, and `Order Number` sections are visible.
 2. Add or edit attribute options if needed.
-3. Open `/menus` and create a menu with attribute switches enabled.
-4. Open `/orders/new`, create an order, and confirm it redirects to `/orders/[id]`.
-5. Add an item and confirm only the selected menu's enabled attributes appear.
-6. Click `Print` once and confirm `printed_count` increments by exactly 1.
-7. Keep printing until `printed_count >= qty`, then confirm reprint warning appears.
-8. Complete the order and verify it appears in `/orders` filters.
-9. Confirm `/print/label/[itemId]` opens a minimal thermal print page.
-10. Use `Bluetooth` or `USB Serial` on the label page to print directly to a NIIMBOT printer when the browser supports it.
+3. Add a paper size and set a default if you want something other than `40 x 30 mm`.
+4. Add or edit an order number format and confirm the preview looks right.
+5. Open `/menus` and create a menu with attribute switches enabled.
+6. Open `/orders/new`, create an order, and confirm it redirects to `/orders/[id]`.
+7. Add an item and confirm only the selected menu's enabled attributes appear.
+8. Click `Print` once and confirm `printed_count` increments by exactly 1.
+9. Keep printing until `printed_count >= qty`, then confirm reprint warning appears.
+10. Confirm `/print/label/[itemId]` uses the active paper size.
+11. Use `Bluetooth` or `USB Serial` on the label page to print directly to a NIIMBOT printer when the browser supports it.
 
 ## Checks
 

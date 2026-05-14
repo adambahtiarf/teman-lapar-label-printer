@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache"
 import { notFound } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import type { Attribute, Menu, Order, OrderItem, OrderWithItems } from "@/lib/types"
+import type { Attribute, Menu, Order, OrderItem, OrderNumberFormat, OrderWithItems, PaperSize } from "@/lib/types"
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
@@ -79,6 +79,42 @@ export async function getMenus(activeOnly = false) {
       }))
       .sort((a, b) => (a.attributes?.name ?? "").localeCompare(b.attributes?.name ?? "")),
   }))
+}
+
+export async function getPaperSizes(activeOnly = false) {
+  noStore()
+  const supabase = await createClient()
+  let query = supabase
+    .from("paper_sizes")
+    .select("id,name,width_mm,height_mm,is_active,is_default")
+    .order("is_default", { ascending: false })
+    .order("name", { ascending: true })
+
+  if (activeOnly) query = query.eq("is_active", true)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data ?? []) as PaperSize[]
+}
+
+export async function getOrderNumberFormats(activeOnly = false) {
+  noStore()
+  const supabase = await createClient()
+  let query = supabase
+    .from("order_number_formats")
+    .select(
+      "id,name,offline_prefix,goj_prefix,grab_prefix,shopee_prefix,date_pattern,sequence_padding,separator,include_random_suffix,is_active,is_default"
+    )
+    .order("is_default", { ascending: false })
+    .order("name", { ascending: true })
+
+  if (activeOnly) query = query.eq("is_active", true)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data ?? []) as OrderNumberFormat[]
 }
 
 export async function getOrders(filters: {

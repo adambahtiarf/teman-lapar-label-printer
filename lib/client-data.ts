@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client"
-import type { Attribute, Menu, Order, OrderItem, OrderWithItems } from "@/lib/types"
+import type { Attribute, Menu, Order, OrderItem, OrderNumberFormat, OrderWithItems, PaperSize } from "@/lib/types"
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
@@ -74,6 +74,40 @@ export async function getMenusClient(activeOnly = false) {
       }))
       .sort((a, b) => (a.attributes?.name ?? "").localeCompare(b.attributes?.name ?? "")),
   }))
+}
+
+export async function getPaperSizesClient(activeOnly = false) {
+  const supabase = createClient()
+  let query = supabase
+    .from("paper_sizes")
+    .select("id,name,width_mm,height_mm,is_active,is_default")
+    .order("is_default", { ascending: false })
+    .order("name", { ascending: true })
+
+  if (activeOnly) query = query.eq("is_active", true)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data ?? []) as PaperSize[]
+}
+
+export async function getOrderNumberFormatsClient(activeOnly = false) {
+  const supabase = createClient()
+  let query = supabase
+    .from("order_number_formats")
+    .select(
+      "id,name,offline_prefix,goj_prefix,grab_prefix,shopee_prefix,date_pattern,sequence_padding,separator,include_random_suffix,is_active,is_default"
+    )
+    .order("is_default", { ascending: false })
+    .order("name", { ascending: true })
+
+  if (activeOnly) query = query.eq("is_active", true)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data ?? []) as OrderNumberFormat[]
 }
 
 export async function getOrdersClient(filters: {

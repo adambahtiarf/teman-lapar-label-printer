@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { DEFAULT_ORDER_NUMBER_FORMAT, ORDER_NUMBER_DATE_PATTERNS } from "@/lib/settings"
 import { createClient } from "@/utils/supabase/server"
 import { slugify } from "@/lib/format"
 
@@ -12,6 +13,26 @@ function stringValue(formData: FormData, key: string) {
 function nullableString(formData: FormData, key: string) {
   const value = stringValue(formData, key)
   return value.length ? value : null
+}
+
+function numberValue(formData: FormData, key: string, fallback = 0) {
+  const value = Number(stringValue(formData, key))
+  return Number.isFinite(value) ? value : fallback
+}
+
+function booleanValue(formData: FormData, key: string) {
+  return stringValue(formData, key) === "true"
+}
+
+function orderNumberDatePatternValue(formData: FormData, key: string) {
+  const value = stringValue(formData, key)
+  return ORDER_NUMBER_DATE_PATTERNS.some((item) => item.value === value)
+    ? value
+    : DEFAULT_ORDER_NUMBER_FORMAT.date_pattern
+}
+
+function formatPrefixValue(formData: FormData, key: string, fallback: string) {
+  return (stringValue(formData, key) || fallback).toUpperCase()
 }
 
 function parseJson<T>(value: FormDataEntryValue | null, fallback: T): T {
@@ -111,6 +132,174 @@ export async function toggleAttributeOption(formData: FormData) {
   throwSupabaseError(error)
 
   revalidatePath("/settings")
+}
+
+export async function createPaperSize(formData: FormData) {
+  const supabase = await createClient()
+  const isDefault = booleanValue(formData, "is_default")
+
+  if (isDefault) {
+    const { error: resetError } = await supabase.from("paper_sizes").update({ is_default: false }).eq("is_default", true)
+    throwSupabaseError(resetError)
+  }
+
+  const { error } = await supabase.from("paper_sizes").insert({
+    name: stringValue(formData, "name"),
+    width_mm: Math.max(1, numberValue(formData, "width_mm", 40)),
+    height_mm: Math.max(1, numberValue(formData, "height_mm", 30)),
+    is_default: isDefault,
+  })
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/print")
+}
+
+export async function updatePaperSize(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+  const isDefault = booleanValue(formData, "is_default")
+
+  if (isDefault) {
+    const { error: resetError } = await supabase.from("paper_sizes").update({ is_default: false }).eq("is_default", true)
+    throwSupabaseError(resetError)
+  }
+
+  const { error } = await supabase
+    .from("paper_sizes")
+    .update({
+      name: stringValue(formData, "name"),
+      width_mm: Math.max(1, numberValue(formData, "width_mm", 40)),
+      height_mm: Math.max(1, numberValue(formData, "height_mm", 30)),
+      is_default: isDefault,
+    })
+    .eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/print")
+}
+
+export async function togglePaperSize(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+  const is_active = booleanValue(formData, "is_active")
+
+  const { error } = await supabase.from("paper_sizes").update({ is_active }).eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/print")
+}
+
+export async function setDefaultPaperSize(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+
+  const { error: resetError } = await supabase.from("paper_sizes").update({ is_default: false }).eq("is_default", true)
+  throwSupabaseError(resetError)
+
+  const { error } = await supabase.from("paper_sizes").update({ is_default: true, is_active: true }).eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/print")
+}
+
+export async function createOrderNumberFormat(formData: FormData) {
+  const supabase = await createClient()
+  const isDefault = booleanValue(formData, "is_default")
+
+  if (isDefault) {
+    const { error: resetError } = await supabase
+      .from("order_number_formats")
+      .update({ is_default: false })
+      .eq("is_default", true)
+    throwSupabaseError(resetError)
+  }
+
+  const { error } = await supabase.from("order_number_formats").insert({
+    name: stringValue(formData, "name"),
+    offline_prefix: formatPrefixValue(formData, "offline_prefix", DEFAULT_ORDER_NUMBER_FORMAT.offline_prefix),
+    goj_prefix: formatPrefixValue(formData, "goj_prefix", DEFAULT_ORDER_NUMBER_FORMAT.goj_prefix),
+    grab_prefix: formatPrefixValue(formData, "grab_prefix", DEFAULT_ORDER_NUMBER_FORMAT.grab_prefix),
+    shopee_prefix: formatPrefixValue(formData, "shopee_prefix", DEFAULT_ORDER_NUMBER_FORMAT.shopee_prefix),
+    date_pattern: orderNumberDatePatternValue(formData, "date_pattern"),
+    sequence_padding: Math.min(6, Math.max(1, numberValue(formData, "sequence_padding", 3))),
+    separator: stringValue(formData, "separator"),
+    include_random_suffix: booleanValue(formData, "include_random_suffix"),
+    is_default: isDefault,
+  })
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/orders/new")
+}
+
+export async function updateOrderNumberFormat(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+  const isDefault = booleanValue(formData, "is_default")
+
+  if (isDefault) {
+    const { error: resetError } = await supabase
+      .from("order_number_formats")
+      .update({ is_default: false })
+      .eq("is_default", true)
+    throwSupabaseError(resetError)
+  }
+
+  const { error } = await supabase
+    .from("order_number_formats")
+    .update({
+      name: stringValue(formData, "name"),
+      offline_prefix: formatPrefixValue(formData, "offline_prefix", DEFAULT_ORDER_NUMBER_FORMAT.offline_prefix),
+      goj_prefix: formatPrefixValue(formData, "goj_prefix", DEFAULT_ORDER_NUMBER_FORMAT.goj_prefix),
+      grab_prefix: formatPrefixValue(formData, "grab_prefix", DEFAULT_ORDER_NUMBER_FORMAT.grab_prefix),
+      shopee_prefix: formatPrefixValue(formData, "shopee_prefix", DEFAULT_ORDER_NUMBER_FORMAT.shopee_prefix),
+      date_pattern: orderNumberDatePatternValue(formData, "date_pattern"),
+      sequence_padding: Math.min(6, Math.max(1, numberValue(formData, "sequence_padding", 3))),
+      separator: stringValue(formData, "separator"),
+      include_random_suffix: booleanValue(formData, "include_random_suffix"),
+      is_default: isDefault,
+    })
+    .eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/orders/new")
+}
+
+export async function toggleOrderNumberFormat(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+  const is_active = booleanValue(formData, "is_active")
+
+  const { error } = await supabase.from("order_number_formats").update({ is_active }).eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/orders/new")
+}
+
+export async function setDefaultOrderNumberFormat(formData: FormData) {
+  const supabase = await createClient()
+  const id = stringValue(formData, "id")
+
+  const { error: resetError } = await supabase
+    .from("order_number_formats")
+    .update({ is_default: false })
+    .eq("is_default", true)
+  throwSupabaseError(resetError)
+
+  const { error } = await supabase
+    .from("order_number_formats")
+    .update({ is_default: true, is_active: true })
+    .eq("id", id)
+  throwSupabaseError(error)
+
+  revalidatePath("/settings")
+  revalidatePath("/orders/new")
 }
 
 export async function createMenu(formData: FormData) {

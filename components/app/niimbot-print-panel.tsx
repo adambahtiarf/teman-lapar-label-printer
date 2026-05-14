@@ -10,16 +10,12 @@ import {
   UsbIcon,
 } from "lucide-react";
 import { formatShortDate } from "@/lib/format";
-import type { Order, OrderItem } from "@/lib/types";
+import { resolvePaperSize } from "@/lib/settings";
+import type { Order, OrderItem, PaperSize } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 type Transport = "bluetooth" | "serial";
 type PrintStatus = "idle" | "connecting" | "printing" | "done" | "error";
-
-const LABEL_MM = {
-  width: 40,
-  height: 30,
-} as const;
 
 const DEFAULT_DPI = 203;
 const DEFAULT_DENSITY = 3;
@@ -99,10 +95,11 @@ function drawLine(
   return lines.length * lineHeight;
 }
 
-function buildCanvas(item: OrderItem, order: Order) {
+function buildCanvas(item: OrderItem, order: Order, paperSize: PaperSize | null) {
+  const currentPaperSize = resolvePaperSize(paperSize)
   const canvas = document.createElement("canvas");
-  const width = mmToPx(LABEL_MM.width, DEFAULT_DPI);
-  const height = mmToPx(LABEL_MM.height, DEFAULT_DPI);
+  const width = mmToPx(currentPaperSize.widthMm, DEFAULT_DPI);
+  const height = mmToPx(currentPaperSize.heightMm, DEFAULT_DPI);
   const padding = 12;
   const bodyWidth = width - padding * 2;
 
@@ -239,9 +236,11 @@ function describeModel(
 export function NiimbotPrintPanel({
   item,
   order,
+  paperSize,
 }: {
   item: OrderItem;
   order: Order;
+  paperSize: PaperSize | null;
 }) {
   const [status, setStatus] = useState<PrintStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -297,7 +296,7 @@ export function NiimbotPrintPanel({
 
       setStatus("printing");
 
-      const canvas = buildCanvas(item, order);
+      const canvas = buildCanvas(item, order, paperSize);
       const encoded = niim.ImageEncoder.encodeCanvas(
         canvas,
         metadata?.printDirection ?? "top",
