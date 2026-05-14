@@ -6,11 +6,11 @@ import { updateOrderStatus } from "@/app/actions"
 import { AddOrderItemForm } from "@/components/app/add-order-item-form"
 import { AppShell } from "@/components/app/app-shell"
 import { EmptyState } from "@/components/app/empty-state"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { OrderItemCard } from "@/components/app/order-item-card"
 import { OrderDetailSkeleton, QueryErrorState } from "@/components/app/page-states"
 import { PageHeader } from "@/components/app/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useClientQuery } from "@/hooks/use-client-query"
@@ -80,14 +80,18 @@ export function OrderDetailPageClient({
                   name="status"
                   value={data.order.status === "completed" ? "in_progress" : "completed"}
                 />
-                <Button type="submit" variant="default" className="w-full">
+                <FormSubmitButton
+                  variant="default"
+                  className="w-full"
+                  pendingLabel={data.order.status === "completed" ? "Reopening..." : "Completing..."}
+                >
                   {data.order.status === "completed" ? (
                     <RotateCcwIcon data-icon="inline-start" />
                   ) : (
                     <CheckCircle2Icon data-icon="inline-start" />
                   )}
                   {data.order.status === "completed" ? "Reopen Order" : "Complete Order"}
-                </Button>
+                </FormSubmitButton>
               </form>
             </CardContent>
           </Card>

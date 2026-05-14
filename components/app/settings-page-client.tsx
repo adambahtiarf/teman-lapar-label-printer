@@ -7,10 +7,10 @@ import { AppShell } from "@/components/app/app-shell"
 import { AttributeForm } from "@/components/app/attribute-form"
 import { AttributeOptionForm } from "@/components/app/attribute-option-form"
 import { EmptyState } from "@/components/app/empty-state"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { PageHeader } from "@/components/app/page-header"
 import { QueryErrorState, SettingsListSkeleton } from "@/components/app/page-states"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useClientQuery } from "@/hooks/use-client-query"
@@ -66,13 +66,17 @@ export function SettingsPageClient() {
                           <form action={toggleAttributeOption}>
                             <input type="hidden" name="id" value={option.id} />
                             <input type="hidden" name="is_active" value={String(!option.is_active)} />
-                            <Button type="submit" variant={option.is_active ? "destructive" : "ghost"} size="icon">
+                            <FormSubmitButton
+                              variant={option.is_active ? "destructive" : "ghost"}
+                              size="icon"
+                              pendingLabel={option.is_active ? "Disabling..." : "Enabling..."}
+                            >
                               {option.is_active ? (
                                 <PowerOffIcon data-icon="inline-start" />
                               ) : (
                                 <PowerIcon data-icon="inline-start" />
                               )}
-                            </Button>
+                            </FormSubmitButton>
                           </form>
                         </div>
                       </div>
@@ -89,11 +93,11 @@ export function SettingsPageClient() {
                 <form action={toggleAttribute}>
                   <input type="hidden" name="id" value={attribute.id} />
                   <input type="hidden" name="is_active" value={String(!attribute.is_active)} />
-                  <Button
-                    type="submit"
+                  <FormSubmitButton
                     variant={attribute.is_active ? "destructive" : "outline"}
                     size="sm"
                     className="w-full"
+                    pendingLabel={attribute.is_active ? "Disabling..." : "Enabling..."}
                   >
                     {attribute.is_active ? (
                       <PowerOffIcon data-icon="inline-start" />
@@ -101,7 +105,7 @@ export function SettingsPageClient() {
                       <PowerIcon data-icon="inline-start" />
                     )}
                     {attribute.is_active ? "Disable" : "Enable"}
-                  </Button>
+                  </FormSubmitButton>
                 </form>
               </CardFooter>
             </Card>

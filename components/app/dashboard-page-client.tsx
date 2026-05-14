@@ -4,6 +4,7 @@ import { useCallback } from "react"
 import Link from "next/link"
 import { ClipboardListIcon, PlusIcon, SettingsIcon, UtensilsIcon } from "lucide-react"
 import { AppShell } from "@/components/app/app-shell"
+import { LoadingLinkContent } from "@/components/app/loading-link-content"
 import { DashboardSummarySkeleton, QueryErrorState } from "@/components/app/page-states"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
@@ -28,26 +29,34 @@ export function DashboardPageClient() {
       <section className="grid grid-cols-2 gap-2">
         <Button asChild className="h-12">
           <Link href="/orders/new">
-            <PlusIcon data-icon="inline-start" />
-            Create Order
+            <LoadingLinkContent pendingLabel="Opening...">
+              <PlusIcon data-icon="inline-start" />
+              Create Order
+            </LoadingLinkContent>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-12">
           <Link href="/menus">
-            <UtensilsIcon data-icon="inline-start" />
-            Master Menu
+            <LoadingLinkContent pendingLabel="Opening...">
+              <UtensilsIcon data-icon="inline-start" />
+              Master Menu
+            </LoadingLinkContent>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-12">
           <Link href="/orders">
-            <ClipboardListIcon data-icon="inline-start" />
-            Order List
+            <LoadingLinkContent pendingLabel="Opening...">
+              <ClipboardListIcon data-icon="inline-start" />
+              Order List
+            </LoadingLinkContent>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-12">
           <Link href="/settings">
-            <SettingsIcon data-icon="inline-start" />
-            Settings
+            <LoadingLinkContent pendingLabel="Opening...">
+              <SettingsIcon data-icon="inline-start" />
+              Settings
+            </LoadingLinkContent>
           </Link>
         </Button>
       </section>
@@ -72,8 +81,10 @@ export function DashboardPageClient() {
           >
             <Button asChild>
               <Link href="/orders/new">
-                <PlusIcon data-icon="inline-start" />
-                Create Order
+                <LoadingLinkContent pendingLabel="Opening...">
+                  <PlusIcon data-icon="inline-start" />
+                  Create Order
+                </LoadingLinkContent>
               </Link>
             </Button>
           </EmptyState>

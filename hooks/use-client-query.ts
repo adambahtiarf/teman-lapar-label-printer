@@ -111,7 +111,7 @@ export function useClientQuery<T>({
   return {
     ...state,
     reload: () => {
-      void runQuery(true)
+      return runQuery(true)
     },
   }
 }

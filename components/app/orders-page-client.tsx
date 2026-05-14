@@ -5,6 +5,7 @@ import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 import { AppShell } from "@/components/app/app-shell"
 import { EmptyState } from "@/components/app/empty-state"
+import { LoadingLinkContent } from "@/components/app/loading-link-content"
 import { OrderCard } from "@/components/app/order-card"
 import { OrderFilters } from "@/components/app/order-filters"
 import { OrderListSkeleton, QueryErrorState } from "@/components/app/page-states"
@@ -39,8 +40,10 @@ export function OrdersPageClient({
         action={
           <Button asChild size="sm">
             <Link href="/orders/new">
-              <PlusIcon data-icon="inline-start" />
-              New
+              <LoadingLinkContent pendingLabel="Opening...">
+                <PlusIcon data-icon="inline-start" />
+                New
+              </LoadingLinkContent>
             </Link>
           </Button>
         }
@@ -61,8 +64,10 @@ export function OrdersPageClient({
         <EmptyState title="No orders found" description="Try changing the filters or create a new order.">
           <Button asChild>
             <Link href="/orders/new">
-              <PlusIcon data-icon="inline-start" />
-              Create Order
+              <LoadingLinkContent pendingLabel="Opening...">
+                <PlusIcon data-icon="inline-start" />
+                Create Order
+              </LoadingLinkContent>
             </Link>
           </Button>
         </EmptyState>

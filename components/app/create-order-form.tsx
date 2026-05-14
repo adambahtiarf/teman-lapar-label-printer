@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { createOrder } from "@/app/actions"
 import { PlusIcon } from "lucide-react"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { ONLINE_PLATFORM_OPTIONS } from "@/lib/platforms"
-import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -68,10 +68,10 @@ export function CreateOrderForm() {
           <Textarea id="note" name="note" />
         </Field>
       </FieldGroup>
-      <Button type="submit">
+      <FormSubmitButton pendingLabel="Creating...">
         <PlusIcon data-icon="inline-start" />
         Create Order
-      </Button>
+      </FormSubmitButton>
     </form>
   )
 }

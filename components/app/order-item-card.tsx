@@ -6,7 +6,8 @@ import {
   incrementPrintedCount,
   updateOrderItem,
 } from "@/app/actions";
-import { CheckIcon, PencilIcon, PrinterIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon, Loader2Icon, PencilIcon, PrinterIcon, Trash2Icon } from "lucide-react";
+import { FormSubmitButton } from "@/components/app/form-submit-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,7 +106,7 @@ export function OrderItemCard({
           <CardTitle className="flex items-start justify-between gap-3">
             <span>{item.menu_name}</span>
             <Badge variant={isOverPrinted ? "secondary" : "outline"}>
-              {item.printed_count} / {item.qty}
+            {item.printed_count} / {item.qty}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -127,8 +128,12 @@ export function OrderItemCard({
               isOverPrinted ? setConfirmOpen(true) : printLabel()
             }
           >
-            <PrinterIcon data-icon="inline-start" />
-            Print
+            {isPending ? (
+              <Loader2Icon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <PrinterIcon data-icon="inline-start" />
+            )}
+            {isPending ? "Printing..." : "Print"}
           </Button>
           <Dialog
             open={editOpen}
@@ -220,25 +225,25 @@ export function OrderItemCard({
                     />
                   </Field>
                 </FieldGroup>
-                <Button type="submit">
+                <FormSubmitButton pendingLabel="Saving...">
                   <CheckIcon data-icon="inline-start" />
                   Save Item
-                </Button>
+                </FormSubmitButton>
               </form>
             </DialogContent>
           </Dialog>
           <form action={deleteOrderItem}>
             <input type="hidden" name="id" value={item.id} />
             <input type="hidden" name="order_id" value={item.order_id} />
-            <Button
-              type="submit"
+            <FormSubmitButton
               variant="destructive"
               size="sm"
               className="w-full"
+              pendingLabel="Deleting..."
             >
               <Trash2Icon data-icon="inline-start" />
               Delete
-            </Button>
+            </FormSubmitButton>
           </form>
         </CardFooter>
       </Card>
@@ -254,7 +259,10 @@ export function OrderItemCard({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction disabled={isPending} onClick={printLabel}>
-              Reprint
+              {isPending ? (
+                <Loader2Icon data-icon="inline-start" className="animate-spin" />
+              ) : null}
+              {isPending ? "Printing..." : "Reprint"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

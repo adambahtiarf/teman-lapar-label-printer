@@ -362,7 +362,11 @@ export function NiimbotPrintPanel({
           ) : (
             <BluetoothIcon data-icon="inline-start" />
           )}
-          Print via Bluetooth
+          {status === "connecting"
+            ? "Connecting..."
+            : status === "printing"
+              ? "Printing..."
+              : "Print via Bluetooth"}
         </Button>
         <Button
           type="button"
@@ -373,8 +377,19 @@ export function NiimbotPrintPanel({
           onClick={() => void printToNiimbot("serial")}
           className="rounded py-6"
         >
-          <UsbIcon data-icon="inline-start" />
-          Print via USB Serial
+          {status === "connecting" || status === "printing" ? (
+            <LoaderCircleIcon
+              data-icon="inline-start"
+              className="animate-spin"
+            />
+          ) : (
+            <UsbIcon data-icon="inline-start" />
+          )}
+          {status === "connecting"
+            ? "Connecting..."
+            : status === "printing"
+              ? "Printing..."
+              : "Print via USB Serial"}
         </Button>
       </div>
 

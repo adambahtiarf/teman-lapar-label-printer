@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowLeftIcon } from "lucide-react"
+import { LoadingLinkContent } from "@/components/app/loading-link-content"
 import { Button } from "@/components/ui/button"
 
 export function PageHeader({
@@ -19,8 +20,10 @@ export function PageHeader({
         {backHref ? (
           <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
             <Link href={backHref}>
-              <ArrowLeftIcon data-icon="inline-start" />
-              Back
+              <LoadingLinkContent pendingLabel="Back...">
+                <ArrowLeftIcon data-icon="inline-start" />
+                Back
+              </LoadingLinkContent>
             </Link>
           </Button>
         ) : null}

@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { FilterIcon, RotateCcwIcon, SearchIcon } from "lucide-react";
 import { DatePickerField } from "@/components/app/date-picker-field";
+import { FormSubmitButton } from "@/components/app/form-submit-button";
+import { LoadingLinkContent } from "@/components/app/loading-link-content";
 import { ONLINE_PLATFORM_OPTIONS } from "@/lib/platforms";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,14 +117,16 @@ export function OrderFilters({
           <div className="grid grid-cols-2 gap-2">
             <Button asChild variant="outline">
               <Link href="/orders">
-                <RotateCcwIcon data-icon="inline-start" />
-                Reset
+                <LoadingLinkContent pendingLabel="Resetting...">
+                  <RotateCcwIcon data-icon="inline-start" />
+                  Reset
+                </LoadingLinkContent>
               </Link>
             </Button>
-            <Button type="submit">
+            <FormSubmitButton pendingLabel="Applying...">
               <SearchIcon data-icon="inline-start" />
               Apply
-            </Button>
+            </FormSubmitButton>
           </div>
         </form>
       </DialogContent>

@@ -5,11 +5,11 @@ import { PowerIcon, PowerOffIcon } from "lucide-react"
 import { toggleMenu } from "@/app/actions"
 import { AppShell } from "@/components/app/app-shell"
 import { EmptyState } from "@/components/app/empty-state"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { MenuForm } from "@/components/app/menu-form"
 import { MenuListSkeleton, QueryErrorState } from "@/components/app/page-states"
 import { PageHeader } from "@/components/app/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useClientQuery } from "@/hooks/use-client-query"
@@ -77,11 +77,11 @@ export function MenusPageClient() {
                   <form action={toggleMenu}>
                     <input type="hidden" name="id" value={menu.id} />
                     <input type="hidden" name="is_active" value={String(!menu.is_active)} />
-                    <Button
-                      type="submit"
+                    <FormSubmitButton
                       variant={menu.is_active ? "destructive" : "outline"}
                       size="sm"
                       className="w-full"
+                      pendingLabel={menu.is_active ? "Disabling..." : "Enabling..."}
                     >
                       {menu.is_active ? (
                         <PowerOffIcon data-icon="inline-start" />
@@ -89,7 +89,7 @@ export function MenusPageClient() {
                         <PowerIcon data-icon="inline-start" />
                       )}
                       {menu.is_active ? "Disable" : "Enable"}
-                    </Button>
+                    </FormSubmitButton>
                   </form>
                 </CardFooter>
               </Card>

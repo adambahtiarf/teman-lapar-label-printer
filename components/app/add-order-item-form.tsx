@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { createOrderItem } from "@/app/actions"
 import { PlusIcon } from "lucide-react"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { Button } from "@/components/ui/button"
 import {
   Combobox,
@@ -143,10 +144,10 @@ export function AddOrderItemForm({ orderId, menus }: { orderId: string; menus: M
               <Textarea id="notes" name="notes" />
             </Field>
           </FieldGroup>
-      <Button type="submit" disabled={!selectedMenu}>
+      <FormSubmitButton disabled={!selectedMenu} pendingLabel="Adding...">
         <PlusIcon data-icon="inline-start" />
         Add Item
-      </Button>
+      </FormSubmitButton>
         </form>
       </DialogContent>
     </Dialog>

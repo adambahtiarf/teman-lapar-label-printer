@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createAttributeOption, updateAttributeOption } from "@/app/actions";
 import { CheckIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { FormSubmitButton } from "@/components/app/form-submit-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,10 +89,10 @@ export function AttributeOptionForm({
               />
             </Field>
           </FieldGroup>
-          <Button type="submit">
+          <FormSubmitButton pendingLabel={option ? "Saving..." : "Creating..."}>
             <CheckIcon data-icon="inline-start" />
             {option ? "Save Option" : "Create Option"}
-          </Button>
+          </FormSubmitButton>
         </form>
       </DialogContent>
     </Dialog>

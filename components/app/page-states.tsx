@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { Loader2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,9 +12,20 @@ export function QueryErrorState({
   title = "Failed to load data",
 }: {
   description: string
-  onRetry: () => void
+  onRetry: () => void | Promise<void>
   title?: string
 }) {
+  const [isRetrying, setIsRetrying] = useState(false)
+
+  async function retry() {
+    setIsRetrying(true)
+    try {
+      await onRetry()
+    } finally {
+      setIsRetrying(false)
+    }
+  }
+
   return (
     <Card size="sm">
       <CardHeader className="flex flex-col gap-1">
@@ -20,8 +33,9 @@ export function QueryErrorState({
         <p className="text-sm text-muted-foreground">{description}</p>
       </CardHeader>
       <CardContent>
-        <Button type="button" variant="outline" onClick={onRetry}>
-          Try Again
+        <Button type="button" variant="outline" disabled={isRetrying} onClick={() => void retry()}>
+          {isRetrying ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : null}
+          {isRetrying ? "Trying..." : "Try Again"}
         </Button>
       </CardContent>
     </Card>

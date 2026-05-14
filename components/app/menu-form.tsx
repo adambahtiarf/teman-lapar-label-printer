@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { createMenu, updateMenu } from "@/app/actions"
 import { CheckIcon, PencilIcon, PlusIcon } from "lucide-react"
+import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -91,10 +92,10 @@ export function MenuForm({ menu, attributes }: { menu?: Menu; attributes: Attrib
               })}
             </div>
           </FieldGroup>
-          <Button type="submit">
+          <FormSubmitButton pendingLabel={menu ? "Saving..." : "Creating..."}>
             <CheckIcon data-icon="inline-start" />
             {menu ? "Save Menu" : "Create Menu"}
-          </Button>
+          </FormSubmitButton>
         </form>
       </DialogContent>
     </Dialog>
