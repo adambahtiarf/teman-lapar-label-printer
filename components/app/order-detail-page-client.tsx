@@ -1,16 +1,18 @@
 "use client"
 
-import { useCallback } from "react"
-import { CheckCircle2Icon, RotateCcwIcon } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { CheckCircle2Icon, Loader2Icon, PrinterIcon, RotateCcwIcon } from "lucide-react"
 import { updateOrderStatus } from "@/app/actions"
 import { AddOrderItemForm } from "@/components/app/add-order-item-form"
 import { AppShell } from "@/components/app/app-shell"
 import { EmptyState } from "@/components/app/empty-state"
 import { FormSubmitButton } from "@/components/app/form-submit-button"
+import { useNiimbotPrinter } from "@/components/app/niimbot-printer-provider"
 import { OrderItemCard } from "@/components/app/order-item-card"
 import { OrderDetailSkeleton, QueryErrorState } from "@/components/app/page-states"
 import { PageHeader } from "@/components/app/page-header"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useClientQuery } from "@/hooks/use-client-query"
@@ -22,6 +24,8 @@ export function OrderDetailPageClient({
 }: {
   orderId: string
 }) {
+  const [printAllProgress, setPrintAllProgress] = useState<{ current: number; total: number } | null>(null)
+  const { isBusy: isPrinterBusy, printLabel } = useNiimbotPrinter()
   const queryFn = useCallback(async () => {
     const [order, menus, activeMenus] = await Promise.all([
       getOrderClient(orderId),
@@ -35,6 +39,33 @@ export function OrderDetailPageClient({
     queryFn,
     subscribeTo: ["orders", "order_items", "menus", "menu_attributes", "attributes", "attribute_options"],
   })
+  const orderItems = data?.order?.order_items
+  const printQueue = useMemo(() => {
+    if (!orderItems) return []
+
+    return orderItems.flatMap((item) => {
+      const remaining = Math.max(0, item.qty - item.printed_count)
+      return Array.from({ length: remaining }, () => item)
+    })
+  }, [orderItems])
+  const isPrintingAll = Boolean(printAllProgress)
+
+  async function printAllLabels() {
+    if (!data?.order || !printQueue.length || isPrintingAll) return
+
+    setPrintAllProgress({ current: 0, total: printQueue.length })
+
+    try {
+      for (const [index, item] of printQueue.entries()) {
+        setPrintAllProgress({ current: index + 1, total: printQueue.length })
+        await printLabel(item, data.order)
+      }
+    } catch {
+      // The printer provider owns the visible error dialog.
+    } finally {
+      setPrintAllProgress(null)
+    }
+  }
 
   return (
     <AppShell>
@@ -99,7 +130,27 @@ export function OrderDetailPageClient({
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-heading text-lg font-medium">Items</h2>
-              {data.activeMenus.length ? <AddOrderItemForm orderId={data.order.id} menus={data.activeMenus} /> : null}
+              <div className="flex items-center gap-2">
+                {data.order.order_items.length ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={!printQueue.length || isPrinterBusy || isPrintingAll}
+                    onClick={() => void printAllLabels()}
+                  >
+                    {isPrintingAll ? (
+                      <Loader2Icon data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <PrinterIcon data-icon="inline-start" />
+                    )}
+                    {isPrintingAll && printAllProgress
+                      ? `Print ${printAllProgress.current}/${printAllProgress.total}`
+                      : "Print All"}
+                  </Button>
+                ) : null}
+                {data.activeMenus.length ? <AddOrderItemForm orderId={data.order.id} menus={data.activeMenus} /> : null}
+              </div>
             </div>
             {data.order.order_items.length ? (
               data.order.order_items.map((item) => (
