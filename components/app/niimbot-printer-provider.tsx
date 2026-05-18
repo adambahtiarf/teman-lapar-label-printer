@@ -84,7 +84,8 @@ const LABEL_MM = {
 
 const DEFAULT_DPI = 203;
 const DEFAULT_DENSITY = 3;
-const PRINT_FONT_FAMILY = '"Geist Mono", "Geist Mono Fallback"';
+const PRINT_SYSTEM_FONT_FAMILY =
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
 const PrinterContext = createContext<PrinterContextValue | null>(null);
 
@@ -213,15 +214,6 @@ function drawTextBlock(
   return block.height;
 }
 
-async function loadPrintFonts() {
-  if (!("fonts" in document)) return;
-
-  await Promise.allSettled([
-    document.fonts.load(`600 16px ${PRINT_FONT_FAMILY}`),
-    document.fonts.load(`700 26px ${PRINT_FONT_FAMILY}`),
-  ]);
-}
-
 function buildCanvas(item: OrderItem, order: Order) {
   const canvas = document.createElement("canvas");
   const width = mmToPx(LABEL_MM.width, DEFAULT_DPI);
@@ -242,22 +234,22 @@ function buildCanvas(item: OrderItem, order: Order) {
   const blocks: LabelTextBlock[] = [
     {
       text: `No: ${order.order_code}`,
-      font: `400 24px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_SYSTEM_FONT_FAMILY}`,
       gapAfter: 2,
     },
     {
       text: formatShortDate(order.created_at),
-      font: `400 24px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_SYSTEM_FONT_FAMILY}`,
       gapAfter: 6,
     },
     {
       text: order.customer_name.toUpperCase(),
-      font: `400 24px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_SYSTEM_FONT_FAMILY}`,
       gapAfter: 4,
     },
     {
       text: item.menu_name,
-      font: `400 26px ${PRINT_FONT_FAMILY}`,
+      font: `400 26px ${PRINT_SYSTEM_FONT_FAMILY}`,
       maxLines: 2,
       gapAfter:
         item.selected_attribute_labels.length || item.notes ? 4 : undefined,
@@ -266,7 +258,7 @@ function buildCanvas(item: OrderItem, order: Order) {
       ? [
           {
             text: item.selected_attribute_labels.join(" / "),
-            font: `400 16px ${PRINT_FONT_FAMILY}`,
+            font: `400 16px ${PRINT_SYSTEM_FONT_FAMILY}`,
             maxLines: 2,
             gapAfter: item.notes ? 4 : undefined,
           },
@@ -276,7 +268,7 @@ function buildCanvas(item: OrderItem, order: Order) {
       ? [
           {
             text: item.notes,
-            font: `600 16px ${PRINT_FONT_FAMILY}`,
+            font: `600 16px ${PRINT_SYSTEM_FONT_FAMILY}`,
             maxLines: 2,
           },
         ]
@@ -504,7 +496,6 @@ export function NiimbotPrinterProvider({
       setLastError(null);
 
       try {
-        await loadPrintFonts();
         const printTask = session.client.abstraction.newPrintTask(
           session.taskName,
           {

@@ -83,8 +83,8 @@ export function LabelPrintView({
           gap: var(--label-gap);
           padding: var(--label-padding);
           color: black;
-          font-family: var(--font-geist-mono), "Geist Mono",
-            "Geist Mono Fallback";
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            "Liberation Mono", "Courier New", monospace;
           font-size: var(--label-font-size);
           line-height: 1.12;
         }

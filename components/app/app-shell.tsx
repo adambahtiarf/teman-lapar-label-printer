@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-120 flex-col bg-background px-4 pt-4">
-      <div className="mb-4">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
         <PrinterConnectionStatus />
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-4">{children}</div>
