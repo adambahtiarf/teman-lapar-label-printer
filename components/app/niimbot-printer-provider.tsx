@@ -56,8 +56,11 @@ type PrinterSession = {
 
 type PrinterContextValue = {
   connectPrinter: () => Promise<void>;
+  lastError: string | null;
   isBusy: boolean;
   message: string | null;
+  printStep: string | null;
+  resetError: () => void;
   printLabel: (item: OrderItem, order: Order) => Promise<void>;
   printerInfo: string | null;
   status: PrinterStatus;
@@ -86,6 +89,23 @@ function preloadNiimModule() {
   }
 
   return niimModulePromise;
+}
+
+function formatErrorDetail(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) {
+    return `${fallback}\nRaw: ${String(error)}`;
+  }
+
+  const lines = [
+    `${error.name || "Error"}: ${error.message || fallback}`,
+    `User agent: ${navigator.userAgent}`,
+  ];
+
+  if (error.cause) {
+    lines.push(`Cause: ${String(error.cause)}`);
+  }
+
+  return lines.join("\n");
 }
 
 function mmToPx(mm: number, dpi: number) {
@@ -355,6 +375,8 @@ export function NiimbotPrinterProvider({
   const sessionRef = useRef<PrinterSession | null>(null);
   const [status, setStatus] = useState<PrinterStatus>("disconnected");
   const [message, setMessage] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [printStep, setPrintStep] = useState<string | null>(null);
   const [printerInfo, setPrinterInfo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -382,6 +404,8 @@ export function NiimbotPrinterProvider({
 
     setStatus("connecting");
     setMessage(null);
+    setLastError(null);
+    setPrintStep(null);
 
     if (!niimModule) {
       await preloadNiimModule();
@@ -392,11 +416,15 @@ export function NiimbotPrinterProvider({
 
     const niim = niimModule;
     const client = new niim.NiimbotBluetoothClient();
+    if (isAndroidDevice()) {
+      client.setPacketInterval(80);
+    }
     client.on("disconnect", () => {
       sessionRef.current = null;
       setPrinterInfo(null);
       setStatus("disconnected");
       setMessage("Printer terputus.");
+      setPrintStep(null);
     });
 
     await connectBluetoothClient(client);
@@ -434,6 +462,8 @@ export function NiimbotPrinterProvider({
     setPrinterInfo(nextPrinterInfo);
     setStatus("connected");
     setMessage("Printer online.");
+    setLastError(null);
+    setPrintStep(null);
 
     return session;
   }, []);
@@ -443,6 +473,7 @@ export function NiimbotPrinterProvider({
       await ensureConnected();
     } catch (error) {
       setStatus(hasBluetoothSupport() ? "error" : "unsupported");
+      setLastError(formatErrorDetail(error, "Gagal menghubungkan printer."));
       setMessage(
         error instanceof Error ? error.message : "Gagal menghubungkan printer.",
       );
@@ -457,6 +488,7 @@ export function NiimbotPrinterProvider({
         session = await ensureConnected();
       } catch (error) {
         setStatus(hasBluetoothSupport() ? "error" : "unsupported");
+        setLastError(formatErrorDetail(error, "Gagal memilih printer."));
         setMessage(
           error instanceof Error ? error.message : "Gagal memilih printer.",
         );
@@ -465,13 +497,19 @@ export function NiimbotPrinterProvider({
 
       setStatus("printing");
       setMessage(null);
+      setLastError(null);
+      setPrintStep("Menyiapkan font dan gambar label...");
 
       try {
         await loadPrintFonts();
         const canvas = buildCanvas(item, order);
+        setPrintStep("Encode gambar label...");
         const encoded = session.niim.ImageEncoder.encodeCanvas(
           canvas,
           session.printDirection,
+        );
+        setPrintStep(
+          `Membuat print task ${session.taskName} (${encoded.rows} x ${encoded.cols})...`,
         );
         const printTask = session.client.abstraction.newPrintTask(
           session.taskName,
@@ -479,23 +517,35 @@ export function NiimbotPrinterProvider({
             labelType: session.niim.LabelType.WithGaps,
             density: session.density,
             totalPages: 1,
+            pageTimeoutMs: isAndroidDevice() ? 30_000 : undefined,
+            statusPollIntervalMs: isAndroidDevice() ? 600 : undefined,
+            statusTimeoutMs: isAndroidDevice() ? 20_000 : undefined,
           },
         );
 
         try {
+          setPrintStep("Mengirim perintah printInit...");
           await printTask.printInit();
+          setPrintStep("Mengirim data gambar ke printer...");
           await printTask.printPage(encoded, 1);
+          setPrintStep("Menunggu halaman selesai dicetak...");
           await printTask.waitForPageFinished();
+          setPrintStep("Menunggu job print selesai...");
           await printTask.waitForFinished();
         } finally {
+          setPrintStep("Menutup sesi print...");
           await session.client.abstraction.printEnd().catch(() => undefined);
         }
 
+        setPrintStep("Menyimpan jumlah print...");
         await incrementPrintedCount(item.id, item.order_id);
         setStatus("connected");
         setMessage("Label berhasil dicetak via Bluetooth.");
+        setLastError(null);
+        setPrintStep(null);
       } catch (error) {
         setStatus(session.client.isConnected() ? "connected" : "error");
+        setLastError(formatErrorDetail(error, "Print gagal."));
         setMessage(error instanceof Error ? error.message : "Print gagal.");
         throw error;
       }
@@ -506,13 +556,24 @@ export function NiimbotPrinterProvider({
   const value = useMemo<PrinterContextValue>(
     () => ({
       connectPrinter,
+      lastError,
       isBusy: status === "connecting" || status === "printing",
       message,
+      printStep,
+      resetError: () => setLastError(null),
       printLabel,
       printerInfo,
       status,
     }),
-    [connectPrinter, message, printLabel, printerInfo, status],
+    [
+      connectPrinter,
+      lastError,
+      message,
+      printLabel,
+      printStep,
+      printerInfo,
+      status,
+    ],
   );
 
   return (
@@ -532,8 +593,16 @@ export function useNiimbotPrinter() {
 }
 
 export function PrinterConnectionStatus() {
-  const { connectPrinter, isBusy, message, printerInfo, status } =
-    useNiimbotPrinter();
+  const {
+    connectPrinter,
+    isBusy,
+    lastError,
+    message,
+    printStep,
+    printerInfo,
+    resetError,
+    status,
+  } = useNiimbotPrinter();
   const isOnline = status === "connected" || status === "printing";
   const statusText = isOnline ? "Printer Online" : "Printer Offline";
   const detail =
@@ -546,38 +615,70 @@ export function PrinterConnectionStatus() {
           : printerInfo || message || "Klik untuk pilih koneksi";
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      disabled={isBusy}
-      onClick={() => void connectPrinter()}
-      className="h-auto w-full justify-start gap-3 rounded border bg-card px-3 py-2 text-left shadow-none"
-      aria-label={`${statusText}. ${detail}`}
-    >
-      <span
-        className={[
-          "flex size-9 shrink-0 items-center justify-center rounded-full text-white",
-          isOnline ? "bg-emerald-600" : "bg-red-600",
-        ].join(" ")}
+    <div className="flex flex-col gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isBusy}
+        onClick={() => void connectPrinter()}
+        className="h-auto w-full justify-start gap-3 rounded border bg-card px-3 py-2 text-left shadow-none"
+        aria-label={`${statusText}. ${detail}`}
       >
-        {status === "connecting" || status === "printing" ? (
-          <LoaderCircleIcon className="size-4 animate-spin" />
-        ) : isOnline ? (
-          <CheckCircle2Icon className="size-4" />
-        ) : status === "unsupported" || status === "error" ? (
-          <AlertCircleIcon className="size-4" />
-        ) : (
-          <BluetoothIcon className="size-4" />
-        )}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium leading-5">
-          {statusText}
+        <span
+          className={[
+            "flex size-9 shrink-0 items-center justify-center rounded-full text-white",
+            isOnline ? "bg-emerald-600" : "bg-red-600",
+          ].join(" ")}
+        >
+          {status === "connecting" || status === "printing" ? (
+            <LoaderCircleIcon className="size-4 animate-spin" />
+          ) : isOnline ? (
+            <CheckCircle2Icon className="size-4" />
+          ) : status === "unsupported" || status === "error" ? (
+            <AlertCircleIcon className="size-4" />
+          ) : (
+            <BluetoothIcon className="size-4" />
+          )}
         </span>
-        <span className="block truncate text-xs font-normal leading-5 text-muted-foreground">
-          {detail}
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium leading-5">
+            {statusText}
+          </span>
+          <span className="block truncate text-xs font-normal leading-5 text-muted-foreground">
+            {message || detail}
+          </span>
         </span>
-      </span>
-    </Button>
+      </Button>
+
+      {lastError ? (
+        <div className="rounded border border-red-200 bg-red-50 p-3 text-red-950">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <AlertCircleIcon className="size-4 shrink-0" />
+              Gagal print
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={resetError}
+              className="h-6 px-2 text-red-950 hover:bg-red-100"
+            >
+              Tutup
+            </Button>
+          </div>
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-white/70 p-2 text-xs leading-5 text-red-950">
+            {lastError}
+          </pre>
+        </div>
+      ) : null}
+
+      {printStep ? (
+        <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-950">
+          <div className="mb-1 font-medium">Status print</div>
+          <div className="break-words">{printStep}</div>
+        </div>
+      ) : null}
+    </div>
   );
 }
