@@ -214,7 +214,7 @@ function drawTextBlock(
 async function loadPrintFonts() {
   if (!("fonts" in document)) return;
 
-  await Promise.all([
+  await Promise.allSettled([
     document.fonts.load(`600 16px ${PRINT_FONT_FAMILY}`),
     document.fonts.load(`700 26px ${PRINT_FONT_FAMILY}`),
   ]);
@@ -502,6 +502,7 @@ export function NiimbotPrinterProvider({
 
       try {
         await loadPrintFonts();
+        setPrintStep("Membuat gambar label...");
         const canvas = buildCanvas(item, order);
         setPrintStep("Encode gambar label...");
         const encoded = session.niim.ImageEncoder.encodeCanvas(
