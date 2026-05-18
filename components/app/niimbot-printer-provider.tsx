@@ -22,7 +22,9 @@ import type { Order, OrderItem } from "@/lib/types";
 
 type NiimModule = typeof import("@mmote/niimbluelib");
 type BluetoothClient = InstanceType<NiimModule["NiimbotBluetoothClient"]>;
-type PrintTaskName = NonNullable<ReturnType<BluetoothClient["getPrintTaskType"]>>;
+type PrintTaskName = NonNullable<
+  ReturnType<BluetoothClient["getPrintTaskType"]>
+>;
 
 type PrinterStatus =
   | "unsupported"
@@ -193,22 +195,22 @@ function buildCanvas(item: OrderItem, order: Order) {
   const blocks: LabelTextBlock[] = [
     {
       text: `No: ${order.order_code}`,
-      font: `400 22px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_FONT_FAMILY}`,
       gapAfter: 2,
     },
     {
       text: formatShortDate(order.created_at),
-      font: `400 22px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_FONT_FAMILY}`,
       gapAfter: 6,
     },
     {
       text: order.customer_name.toUpperCase(),
-      font: `700 22px ${PRINT_FONT_FAMILY}`,
+      font: `400 24px ${PRINT_FONT_FAMILY}`,
       gapAfter: 4,
     },
     {
       text: item.menu_name,
-      font: `700 26px ${PRINT_FONT_FAMILY}`,
+      font: `400 26px ${PRINT_FONT_FAMILY}`,
       maxLines: 2,
       gapAfter:
         item.selected_attribute_labels.length || item.notes ? 4 : undefined,
@@ -217,7 +219,7 @@ function buildCanvas(item: OrderItem, order: Order) {
       ? [
           {
             text: item.selected_attribute_labels.join(" / "),
-            font: `600 16px ${PRINT_FONT_FAMILY}`,
+            font: `400 16px ${PRINT_FONT_FAMILY}`,
             maxLines: 2,
             gapAfter: item.notes ? 4 : undefined,
           },
@@ -440,7 +442,9 @@ export function NiimbotPrinterProvider({
 export function useNiimbotPrinter() {
   const context = useContext(PrinterContext);
   if (!context) {
-    throw new Error("useNiimbotPrinter must be used inside NiimbotPrinterProvider.");
+    throw new Error(
+      "useNiimbotPrinter must be used inside NiimbotPrinterProvider.",
+    );
   }
 
   return context;
