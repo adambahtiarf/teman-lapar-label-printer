@@ -17,6 +17,13 @@ import {
 } from "lucide-react";
 import { incrementPrintedCount } from "@/app/actions";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatShortDate } from "@/lib/format";
 import type { Order, OrderItem } from "@/lib/types";
 
@@ -59,7 +66,6 @@ type PrinterContextValue = {
   lastError: string | null;
   isBusy: boolean;
   message: string | null;
-  printStep: string | null;
   resetError: () => void;
   printLabel: (item: OrderItem, order: Order) => Promise<void>;
   printerInfo: string | null;
@@ -93,19 +99,10 @@ function preloadNiimModule() {
 
 function formatErrorDetail(error: unknown, fallback: string) {
   if (!(error instanceof Error)) {
-    return `${fallback}\nRaw: ${String(error)}`;
+    return String(error || fallback);
   }
 
-  const lines = [
-    `${error.name || "Error"}: ${error.message || fallback}`,
-    `User agent: ${navigator.userAgent}`,
-  ];
-
-  if (error.cause) {
-    lines.push(`Cause: ${String(error.cause)}`);
-  }
-
-  return lines.join("\n");
+  return `${error.name || "Error"}: ${error.message || fallback}`;
 }
 
 function mmToPx(mm: number, dpi: number) {
@@ -376,7 +373,6 @@ export function NiimbotPrinterProvider({
   const [status, setStatus] = useState<PrinterStatus>("disconnected");
   const [message, setMessage] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [printStep, setPrintStep] = useState<string | null>(null);
   const [printerInfo, setPrinterInfo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -405,7 +401,6 @@ export function NiimbotPrinterProvider({
     setStatus("connecting");
     setMessage(null);
     setLastError(null);
-    setPrintStep(null);
 
     if (!niimModule) {
       await preloadNiimModule();
@@ -424,7 +419,6 @@ export function NiimbotPrinterProvider({
       setPrinterInfo(null);
       setStatus("disconnected");
       setMessage("Printer terputus.");
-      setPrintStep(null);
     });
 
     await connectBluetoothClient(client);
@@ -463,7 +457,6 @@ export function NiimbotPrinterProvider({
     setStatus("connected");
     setMessage("Printer online.");
     setLastError(null);
-    setPrintStep(null);
 
     return session;
   }, []);
@@ -498,19 +491,13 @@ export function NiimbotPrinterProvider({
       setStatus("printing");
       setMessage(null);
       setLastError(null);
-      setPrintStep("Menyiapkan font dan gambar label...");
 
       try {
         await loadPrintFonts();
-        setPrintStep("Membuat gambar label...");
         const canvas = buildCanvas(item, order);
-        setPrintStep("Encode gambar label...");
         const encoded = session.niim.ImageEncoder.encodeCanvas(
           canvas,
           session.printDirection,
-        );
-        setPrintStep(
-          `Membuat print task ${session.taskName} (${encoded.rows} x ${encoded.cols})...`,
         );
         const printTask = session.client.abstraction.newPrintTask(
           session.taskName,
@@ -525,25 +512,18 @@ export function NiimbotPrinterProvider({
         );
 
         try {
-          setPrintStep("Mengirim perintah printInit...");
           await printTask.printInit();
-          setPrintStep("Mengirim data gambar ke printer...");
           await printTask.printPage(encoded, 1);
-          setPrintStep("Menunggu halaman selesai dicetak...");
           await printTask.waitForPageFinished();
-          setPrintStep("Menunggu job print selesai...");
           await printTask.waitForFinished();
         } finally {
-          setPrintStep("Menutup sesi print...");
           await session.client.abstraction.printEnd().catch(() => undefined);
         }
 
-        setPrintStep("Menyimpan jumlah print...");
         await incrementPrintedCount(item.id, item.order_id);
         setStatus("connected");
         setMessage("Label berhasil dicetak via Bluetooth.");
         setLastError(null);
-        setPrintStep(null);
       } catch (error) {
         setStatus(session.client.isConnected() ? "connected" : "error");
         setLastError(formatErrorDetail(error, "Print gagal."));
@@ -560,7 +540,6 @@ export function NiimbotPrinterProvider({
       lastError,
       isBusy: status === "connecting" || status === "printing",
       message,
-      printStep,
       resetError: () => setLastError(null),
       printLabel,
       printerInfo,
@@ -571,7 +550,6 @@ export function NiimbotPrinterProvider({
       lastError,
       message,
       printLabel,
-      printStep,
       printerInfo,
       status,
     ],
@@ -599,7 +577,6 @@ export function PrinterConnectionStatus() {
     isBusy,
     lastError,
     message,
-    printStep,
     printerInfo,
     resetError,
     status,
@@ -651,35 +628,21 @@ export function PrinterConnectionStatus() {
         </span>
       </Button>
 
-      {lastError ? (
-        <div className="rounded border border-red-200 bg-red-50 p-3 text-red-950">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <AlertCircleIcon className="size-4 shrink-0" />
+      <Dialog open={Boolean(lastError)} onOpenChange={(open) => {
+        if (!open) resetError();
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircleIcon className="size-4 text-red-600" />
               Gagal print
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={resetError}
-              className="h-6 px-2 text-red-950 hover:bg-red-100"
-            >
-              Tutup
-            </Button>
-          </div>
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-white/70 p-2 text-xs leading-5 text-red-950">
-            {lastError}
-          </pre>
-        </div>
-      ) : null}
-
-      {printStep ? (
-        <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-950">
-          <div className="mb-1 font-medium">Status print</div>
-          <div className="break-words">{printStep}</div>
-        </div>
-      ) : null}
+            </DialogTitle>
+            <DialogDescription>
+              {lastError || "Print tidak bisa dijalankan."}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
