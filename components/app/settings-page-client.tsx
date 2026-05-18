@@ -126,12 +126,12 @@ export function SettingsPageClient() {
           <CardTitle>General</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <p>Label route uses a 40mm x 30mm print page.</p>
-          <p>NIIMBOT direct print is available from the label page with Bluetooth and USB Serial browser support.</p>
+          <p>Labels print directly to NIIMBOT over Bluetooth at 50mm x 30mm.</p>
+          <p>The printer status at the top of the app turns green when online and red when disconnected.</p>
           <p>
             Order code prefixes: {ORDER_CODE_PREFIX_INFO.map((item) => `${item.code} = ${item.label}`).join(", ")}.
           </p>
-          <p>Use the browser print dialog to choose the thermal printer.</p>
+          <p>When disconnected, tapping Print opens the Bluetooth printer selector.</p>
         </CardContent>
       </Card>
     </AppShell>

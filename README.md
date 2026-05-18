@@ -5,7 +5,7 @@ create order, add items, print one thermal label per click, and complete the ord
 
 ## Printer Support
 
-- Label size is configured for `40 x 30 mm`.
+- Label size is configured for `50 x 30 mm`.
 - Browser print fallback is available on `/print/label/[itemId]`.
 - Direct NIIMBOT printing is integrated with `@mmote/niimbluelib`.
 - `NIIMBOT B1`: use Bluetooth from a Chromium-based browser with Web Bluetooth.

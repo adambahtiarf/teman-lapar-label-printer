@@ -17,12 +17,13 @@ type Transport = "bluetooth" | "serial";
 type PrintStatus = "idle" | "connecting" | "printing" | "done" | "error";
 
 const LABEL_MM = {
-  width: 40,
+  width: 50,
   height: 30,
 } as const;
 
 const DEFAULT_DPI = 203;
 const DEFAULT_DENSITY = 3;
+const PRINT_FONT_FAMILY = '"Geist Mono", "Geist Mono Fallback"';
 
 function mmToPx(mm: number, dpi: number) {
   return Math.round((mm / 25.4) * dpi);
@@ -75,28 +76,67 @@ function wrapText(
   return lines;
 }
 
-function drawLine(
+type LabelTextBlock = {
+  text: string;
+  font: string;
+  maxLines?: number;
+  gapAfter?: number;
+};
+
+type MeasuredLabelTextBlock = LabelTextBlock & {
+  lines: string[];
+  lineHeight: number;
+  height: number;
+};
+
+function fontPixelSize(font: string) {
+  const match = font.match(/(\d+(?:\.\d+)?)px/);
+  return match ? Number(match[1]) : 16;
+}
+
+function measureTextBlock(
   context: CanvasRenderingContext2D,
-  text: string,
+  block: LabelTextBlock,
+  maxWidth: number,
+): MeasuredLabelTextBlock {
+  context.font = block.font;
+
+  const fontSize = fontPixelSize(block.font);
+  const lineHeight = Math.round(fontSize * 1.2);
+  const lines = wrapText(context, block.text, maxWidth, block.maxLines ?? 1);
+
+  return {
+    ...block,
+    lines,
+    lineHeight,
+    height: lines.length * lineHeight,
+  };
+}
+
+function drawTextBlock(
+  context: CanvasRenderingContext2D,
+  block: MeasuredLabelTextBlock,
   x: number,
   y: number,
-  font: string,
-  maxWidth: number,
-  maxLines = 1,
 ) {
-  context.font = font;
+  context.font = block.font;
   context.fillStyle = "#000";
   context.textBaseline = "top";
 
-  const fontSize = Number.parseInt(font, 10) || 16;
-  const lineHeight = Math.round(fontSize * 1.2);
-  const lines = wrapText(context, text, maxWidth, maxLines);
-
-  lines.forEach((line, index) => {
-    context.fillText(line, x, y + index * lineHeight);
+  block.lines.forEach((line, index) => {
+    context.fillText(line, x, y + index * block.lineHeight);
   });
 
-  return lines.length * lineHeight;
+  return block.height;
+}
+
+async function loadPrintFonts() {
+  if (!("fonts" in document)) return;
+
+  await Promise.all([
+    document.fonts.load(`600 16px ${PRINT_FONT_FAMILY}`),
+    document.fonts.load(`700 26px ${PRINT_FONT_FAMILY}`),
+  ]);
 }
 
 function buildCanvas(item: OrderItem, order: Order) {
@@ -116,69 +156,68 @@ function buildCanvas(item: OrderItem, order: Order) {
   context.fillRect(0, 0, width, height);
   context.fillStyle = "#000";
 
-  let y = padding;
-  y += drawLine(
-    context,
-    `No: ${order.order_code}`,
-    padding,
-    y,
-    "500 14px monospace",
-    bodyWidth,
-  );
-  y += 2;
-  y += drawLine(
-    context,
-    formatShortDate(order.created_at),
-    padding,
-    y,
-    "500 14px monospace",
-    bodyWidth,
-  );
-  y += 6;
-  y += drawLine(
-    context,
-    order.customer_name.toUpperCase(),
-    padding,
-    y,
-    "700 18px monospace",
-    bodyWidth,
-  );
-  y += 4;
-  y += drawLine(
-    context,
-    item.menu_name,
-    padding,
-    y,
-    "700 20px monospace",
-    bodyWidth,
-    2,
-  );
+  const blocks: LabelTextBlock[] = [
+    {
+      text: `No: ${order.order_code}`,
+      font: `400 22px ${PRINT_FONT_FAMILY}`,
+      gapAfter: 2,
+    },
+    {
+      text: formatShortDate(order.created_at),
+      font: `400 22px ${PRINT_FONT_FAMILY}`,
+      gapAfter: 6,
+    },
+    {
+      text: order.customer_name.toUpperCase(),
+      font: `700 22px ${PRINT_FONT_FAMILY}`,
+      gapAfter: 4,
+    },
+    {
+      text: item.menu_name,
+      font: `700 26px ${PRINT_FONT_FAMILY}`,
+      maxLines: 2,
+      gapAfter:
+        item.selected_attribute_labels.length || item.notes ? 4 : undefined,
+    },
+    ...(item.selected_attribute_labels.length
+      ? [
+          {
+            text: item.selected_attribute_labels.join(" / "),
+            font: `600 16px ${PRINT_FONT_FAMILY}`,
+            maxLines: 2,
+            gapAfter: item.notes ? 4 : undefined,
+          },
+        ]
+      : []),
+    ...(item.notes
+      ? [
+          {
+            text: item.notes,
+            font: `600 16px ${PRINT_FONT_FAMILY}`,
+            maxLines: 2,
+          },
+        ]
+      : []),
+  ];
 
-  if (item.selected_attribute_labels.length) {
-    y += 4;
-    y += drawLine(
-      context,
-      item.selected_attribute_labels.join(" / "),
-      padding,
-      y,
-      "500 14px monospace",
-      bodyWidth,
-      2,
-    );
-  }
+  const measuredBlocks = blocks.map((block) =>
+    measureTextBlock(context, block, bodyWidth),
+  );
+  const contentHeight = measuredBlocks.reduce(
+    (total, block, index) =>
+      total +
+      block.height +
+      (index < measuredBlocks.length - 1 ? (block.gapAfter ?? 0) : 0),
+    0,
+  );
+  let y = Math.max(padding, Math.round((height - contentHeight) / 2));
 
-  if (item.notes) {
-    y += 4;
-    drawLine(
-      context,
-      item.notes,
-      padding,
-      y,
-      "500 14px monospace",
-      bodyWidth,
-      2,
-    );
-  }
+  measuredBlocks.forEach((block, index) => {
+    y += drawTextBlock(context, block, padding, y);
+    if (index < measuredBlocks.length - 1) {
+      y += block.gapAfter ?? 0;
+    }
+  });
 
   return canvas;
 }
@@ -297,6 +336,7 @@ export function NiimbotPrintPanel({
 
       setStatus("printing");
 
+      await loadPrintFonts();
       const canvas = buildCanvas(item, order);
       const encoded = niim.ImageEncoder.encodeCanvas(
         canvas,

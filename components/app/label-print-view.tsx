@@ -6,13 +6,13 @@ import { formatShortDate } from "@/lib/format";
 import type { Order, OrderItem } from "@/lib/types";
 
 const LABEL_PRINT_CONFIG = {
-  widthMm: 40,
+  widthMm: 50,
   heightMm: 30,
   paddingMm: 1.5,
-  fontSizePt: 6.5,
-  customerFontSizePt: 7,
-  menuFontSizePt: 8,
-  gapMm: 0.6,
+  fontSizePt: 7.5,
+  customerFontSizePt: 9,
+  menuFontSizePt: 10.5,
+  gapMm: 0.7,
 } as const;
 
 export function LabelPrintView({
@@ -41,7 +41,7 @@ export function LabelPrintView({
               Label Preview
             </p>
             <p className="mt-1 text-sm text-stone-600">
-              NIIMBOT label size `40 x 30 mm`
+              NIIMBOT label size `50 x 30 mm`
             </p>
           </div>
           <div className="rounded-full border border-stone-200 px-3 py-1 text-xs font-medium text-stone-600">
@@ -54,8 +54,8 @@ export function LabelPrintView({
             className="label-ticket flex flex-col overflow-hidden font-mono leading-tight shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
             style={labelStyle}
           >
-            <p>No: {order.order_code}</p>
-            <p>{formatShortDate(order.created_at)}</p>
+            <p className="label-meta">No: {order.order_code}</p>
+            <p className="label-meta">{formatShortDate(order.created_at)}</p>
             <p className="label-customer">
               {order.customer_name.toUpperCase()}
             </p>
@@ -83,6 +83,8 @@ export function LabelPrintView({
           gap: var(--label-gap);
           padding: var(--label-padding);
           color: black;
+          font-family: var(--font-geist-mono), "Geist Mono",
+            "Geist Mono Fallback";
           font-size: var(--label-font-size);
           line-height: 1.12;
         }
@@ -96,6 +98,11 @@ export function LabelPrintView({
 
         .label-customer {
           font-size: var(--label-customer-font-size);
+        }
+
+        .label-meta {
+          font-size: var(--label-customer-font-size);
+          font-weight: 400;
         }
 
         .label-menu {

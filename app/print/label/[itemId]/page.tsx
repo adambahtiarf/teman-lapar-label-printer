@@ -1,9 +1,5 @@
-import { PrintLabelPageClient } from "@/components/app/print-label-page-client"
+import { redirect } from "next/navigation"
 
-type Params = Promise<{ itemId: string }>
-
-export default async function PrintLabelPage({ params }: { params: Params }) {
-  const { itemId } = await params
-
-  return <PrintLabelPageClient key={itemId} itemId={itemId} />
+export default function PrintLabelPage() {
+  redirect("/orders")
 }

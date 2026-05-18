@@ -292,5 +292,4 @@ export async function incrementPrintedCount(itemId: string, orderId: string) {
   throwSupabaseError(error)
 
   revalidatePath(`/orders/${orderId}`)
-  revalidatePath(`/print/label/${itemId}`)
 }

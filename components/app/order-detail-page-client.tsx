@@ -102,7 +102,14 @@ export function OrderDetailPageClient({
               {data.activeMenus.length ? <AddOrderItemForm orderId={data.order.id} menus={data.activeMenus} /> : null}
             </div>
             {data.order.order_items.length ? (
-              data.order.order_items.map((item) => <OrderItemCard key={item.id} item={item} menus={data.menus} />)
+              data.order.order_items.map((item) => (
+                <OrderItemCard
+                  key={item.id}
+                  item={item}
+                  menus={data.menus}
+                  order={data.order!}
+                />
+              ))
             ) : !data.activeMenus.length ? (
               <EmptyState
                 title="No active menus"

@@ -8,6 +8,7 @@ import {
   SettingsIcon,
   UtensilsIcon,
 } from "lucide-react";
+import { PrinterConnectionStatus } from "@/components/app/niimbot-printer-provider";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -22,6 +23,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-120 flex-col bg-background px-4 pt-4">
+      <div className="mb-4">
+        <PrinterConnectionStatus />
+      </div>
       <div className="flex min-h-0 flex-1 flex-col gap-4">{children}</div>
       <nav className="sticky bottom-0 -mx-4 grid grid-cols-4 gap-1 border-t bg-background/95 px-3 py-3 backdrop-blur">
         {navItems.map((item) => {

@@ -193,7 +193,7 @@ export function PrintLabelSkeleton() {
           <Skeleton className="h-8 w-24 rounded-full" />
         </div>
         <div className="rounded bg-[linear-gradient(180deg,#fafaf9_0%,#f5f5f4_100%)] p-6">
-          <Skeleton className="mx-auto h-[30mm] w-[40mm] rounded-md" />
+          <Skeleton className="mx-auto h-[30mm] w-[50mm] rounded-md" />
         </div>
       </section>
       <Card size="sm">

@@ -3,11 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import {
   deleteOrderItem,
-  incrementPrintedCount,
   updateOrderItem,
 } from "@/app/actions";
 import { CheckIcon, Loader2Icon, PencilIcon, PrinterIcon, Trash2Icon } from "lucide-react";
 import { FormSubmitButton } from "@/components/app/form-submit-button";
+import { useNiimbotPrinter } from "@/components/app/niimbot-printer-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Attribute, Menu, OrderItem } from "@/lib/types";
+import type { Attribute, Menu, Order, OrderItem } from "@/lib/types";
 
 function isAttribute(attribute: Attribute | null): attribute is Attribute {
   return Boolean(attribute);
@@ -55,9 +55,11 @@ function isAttribute(attribute: Attribute | null): attribute is Attribute {
 export function OrderItemCard({
   item,
   menus,
+  order,
 }: {
   item: OrderItem;
   menus: Menu[];
+  order: Order;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -65,6 +67,8 @@ export function OrderItemCard({
     item.selected_attributes,
   );
   const [isPending, startTransition] = useTransition();
+  const { isBusy: isPrinterBusy, printLabel: printViaBluetooth } =
+    useNiimbotPrinter();
   const isOverPrinted = item.printed_count >= item.qty;
   const selectedMenu = useMemo(
     () =>
@@ -93,9 +97,12 @@ export function OrderItemCard({
 
   function printLabel() {
     startTransition(async () => {
-      await incrementPrintedCount(item.id, item.order_id);
-      window.location.assign(`/print/label/${item.id}`);
-      setConfirmOpen(false);
+      try {
+        await printViaBluetooth(item, order);
+        setConfirmOpen(false);
+      } catch {
+        // The printer provider owns the visible error message.
+      }
     });
   }
 
@@ -123,17 +130,17 @@ export function OrderItemCard({
           <Button
             type="button"
             size="sm"
-            disabled={isPending}
+            disabled={isPending || isPrinterBusy}
             onClick={() =>
               isOverPrinted ? setConfirmOpen(true) : printLabel()
             }
           >
-            {isPending ? (
+            {isPending || isPrinterBusy ? (
               <Loader2Icon data-icon="inline-start" className="animate-spin" />
             ) : (
               <PrinterIcon data-icon="inline-start" />
             )}
-            {isPending ? "Printing..." : "Print"}
+            {isPending || isPrinterBusy ? "Printing..." : "Print"}
           </Button>
           <Dialog
             open={editOpen}
@@ -258,11 +265,14 @@ export function OrderItemCard({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={isPending} onClick={printLabel}>
+            <AlertDialogAction
+              disabled={isPending || isPrinterBusy}
+              onClick={printLabel}
+            >
               {isPending ? (
                 <Loader2Icon data-icon="inline-start" className="animate-spin" />
               ) : null}
-              {isPending ? "Printing..." : "Reprint"}
+              {isPending || isPrinterBusy ? "Printing..." : "Reprint"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
