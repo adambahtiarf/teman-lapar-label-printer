@@ -43,10 +43,16 @@ export function OrderDetailPageClient({
   const printQueue = useMemo(() => {
     if (!orderItems) return []
 
-    return orderItems.flatMap((item) => {
+    const remainingQueue = orderItems.flatMap((item) => {
       const remaining = Math.max(0, item.qty - item.printed_count)
       return Array.from({ length: remaining }, () => item)
     })
+
+    if (remainingQueue.length) return remainingQueue
+
+    return orderItems.flatMap((item) =>
+      Array.from({ length: Math.max(1, item.qty) }, () => item),
+    )
   }, [orderItems])
   const isPrintingAll = Boolean(printAllProgress)
 
@@ -136,7 +142,7 @@ export function OrderDetailPageClient({
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={!printQueue.length || isPrinterBusy || isPrintingAll}
+                    disabled={!data.order.order_items.length || isPrinterBusy || isPrintingAll}
                     onClick={() => void printAllLabels()}
                   >
                     {isPrintingAll ? (
