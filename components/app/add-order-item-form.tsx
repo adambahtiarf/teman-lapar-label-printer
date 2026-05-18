@@ -6,14 +6,6 @@ import { PlusIcon } from "lucide-react"
 import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { Button } from "@/components/ui/button"
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -83,30 +75,28 @@ export function AddOrderItemForm({ orderId, menus }: { orderId: string; menus: M
           <FieldGroup>
             <Field>
               <FieldLabel>Menu</FieldLabel>
-              <Combobox
-                items={menus}
-                value={selectedMenu ?? null}
-                itemToStringLabel={(menu) => menu.name}
-                itemToStringValue={(menu) => menu.id}
-                onValueChange={(menu) => {
-                  if (!menu) return
-                  setMenuId(menu.id)
+              <Select
+                value={menuId}
+                onValueChange={(nextMenuId) => {
+                  setMenuId(nextMenuId)
                   setSelectedValues({})
                   setSelectedLabels({})
                 }}
+                required
               >
-                <ComboboxInput placeholder="Select menu" className="w-full" />
-                <ComboboxContent>
-                  <ComboboxEmpty>No menu found.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(menu) => (
-                      <ComboboxItem key={menu.id} value={menu}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select menu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {menus.map((menu) => (
+                      <SelectItem key={menu.id} value={menu.id}>
                         {menu.name}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </Field>
             {attributes.map((attribute) => (
               <Field key={attribute.id}>
@@ -144,10 +134,10 @@ export function AddOrderItemForm({ orderId, menus }: { orderId: string; menus: M
               <Textarea id="notes" name="notes" />
             </Field>
           </FieldGroup>
-      <FormSubmitButton disabled={!selectedMenu} pendingLabel="Adding...">
-        <PlusIcon data-icon="inline-start" />
-        Add Item
-      </FormSubmitButton>
+          <FormSubmitButton disabled={!selectedMenu} pendingLabel="Adding...">
+            <PlusIcon data-icon="inline-start" />
+            Add Item
+          </FormSubmitButton>
         </form>
       </DialogContent>
     </Dialog>

@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useClientQuery } from "@/hooks/use-client-query"
 import { getMenusClient, getOrderClient } from "@/lib/client-data"
@@ -25,7 +26,7 @@ export function OrderDetailPageClient({
   orderId: string
 }) {
   const [printAllProgress, setPrintAllProgress] = useState<{ current: number; total: number } | null>(null)
-  const { isBusy: isPrinterBusy, printLabel } = useNiimbotPrinter()
+  const { isBusy: isPrinterBusy, printLabels } = useNiimbotPrinter()
   const queryFn = useCallback(async () => {
     const [order, menus, activeMenus] = await Promise.all([
       getOrderClient(orderId),
@@ -55,6 +56,9 @@ export function OrderDetailPageClient({
     )
   }, [orderItems])
   const isPrintingAll = Boolean(printAllProgress)
+  const printAllPercent = printAllProgress
+    ? (printAllProgress.current / printAllProgress.total) * 100
+    : 0
 
   async function printAllLabels() {
     if (!data?.order || !printQueue.length || isPrintingAll) return
@@ -62,10 +66,7 @@ export function OrderDetailPageClient({
     setPrintAllProgress({ current: 0, total: printQueue.length })
 
     try {
-      for (const [index, item] of printQueue.entries()) {
-        setPrintAllProgress({ current: index + 1, total: printQueue.length })
-        await printLabel(item, data.order)
-      }
+      await printLabels(printQueue, data.order, setPrintAllProgress)
     } catch {
       // The printer provider owns the visible error dialog.
     } finally {
@@ -158,6 +159,17 @@ export function OrderDetailPageClient({
                 {data.activeMenus.length ? <AddOrderItemForm orderId={data.order.id} menus={data.activeMenus} /> : null}
               </div>
             </div>
+            {isPrintingAll && printAllProgress ? (
+              <div className="flex flex-col gap-2 rounded-xl bg-muted/50 p-3">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium">Printing labels</span>
+                  <span className="text-muted-foreground">
+                    {printAllProgress.current} / {printAllProgress.total}
+                  </span>
+                </div>
+                <Progress value={printAllPercent} />
+              </div>
+            ) : null}
             {data.order.order_items.length ? (
               data.order.order_items.map((item) => (
                 <OrderItemCard

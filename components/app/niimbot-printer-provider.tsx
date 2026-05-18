@@ -68,6 +68,11 @@ type PrinterContextValue = {
   message: string | null;
   resetError: () => void;
   printLabel: (item: OrderItem, order: Order) => Promise<void>;
+  printLabels: (
+    items: OrderItem[],
+    order: Order,
+    onProgress?: (progress: { current: number; total: number }) => void,
+  ) => Promise<void>;
   printerInfo: string | null;
   status: PrinterStatus;
 };
@@ -473,8 +478,14 @@ export function NiimbotPrinterProvider({
     }
   }, [ensureConnected]);
 
-  const printLabel = useCallback(
-    async (item: OrderItem, order: Order) => {
+  const printLabels = useCallback(
+    async (
+      items: OrderItem[],
+      order: Order,
+      onProgress?: (progress: { current: number; total: number }) => void,
+    ) => {
+      if (!items.length) return;
+
       let session: PrinterSession;
 
       try {
@@ -494,17 +505,12 @@ export function NiimbotPrinterProvider({
 
       try {
         await loadPrintFonts();
-        const canvas = buildCanvas(item, order);
-        const encoded = session.niim.ImageEncoder.encodeCanvas(
-          canvas,
-          session.printDirection,
-        );
         const printTask = session.client.abstraction.newPrintTask(
           session.taskName,
           {
             labelType: session.niim.LabelType.WithGaps,
             density: session.density,
-            totalPages: 1,
+            totalPages: items.length,
             pageTimeoutMs: isAndroidDevice() ? 30_000 : undefined,
             statusPollIntervalMs: isAndroidDevice() ? 600 : undefined,
             statusTimeoutMs: isAndroidDevice() ? 20_000 : undefined,
@@ -513,16 +519,32 @@ export function NiimbotPrinterProvider({
 
         try {
           await printTask.printInit();
-          await printTask.printPage(encoded, 1);
-          await printTask.waitForPageFinished();
+          for (const [index, item] of items.entries()) {
+            const canvas = buildCanvas(item, order);
+            const encoded = session.niim.ImageEncoder.encodeCanvas(
+              canvas,
+              session.printDirection,
+            );
+
+            await printTask.printPage(encoded, 1);
+            await printTask.waitForPageFinished();
+            onProgress?.({ current: index + 1, total: items.length });
+          }
           await printTask.waitForFinished();
         } finally {
-          await session.client.abstraction.printEnd().catch(() => undefined);
+          await printTask.printEnd().catch(() => undefined);
         }
 
-        await incrementPrintedCount(item.id, item.order_id);
+        for (const item of items) {
+          await incrementPrintedCount(item.id, item.order_id);
+        }
+
         setStatus("connected");
-        setMessage("Label berhasil dicetak via Bluetooth.");
+        setMessage(
+          items.length === 1
+            ? "Label berhasil dicetak via Bluetooth."
+            : `${items.length} label berhasil dicetak via Bluetooth.`,
+        );
         setLastError(null);
       } catch (error) {
         setStatus(session.client.isConnected() ? "connected" : "error");
@@ -534,6 +556,13 @@ export function NiimbotPrinterProvider({
     [ensureConnected],
   );
 
+  const printLabel = useCallback(
+    async (item: OrderItem, order: Order) => {
+      await printLabels([item], order);
+    },
+    [printLabels],
+  );
+
   const value = useMemo<PrinterContextValue>(
     () => ({
       connectPrinter,
@@ -542,6 +571,7 @@ export function NiimbotPrinterProvider({
       message,
       resetError: () => setLastError(null),
       printLabel,
+      printLabels,
       printerInfo,
       status,
     }),
@@ -550,6 +580,7 @@ export function NiimbotPrinterProvider({
       lastError,
       message,
       printLabel,
+      printLabels,
       printerInfo,
       status,
     ],
