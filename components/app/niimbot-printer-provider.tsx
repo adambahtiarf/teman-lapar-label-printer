@@ -25,6 +25,17 @@ type BluetoothClient = InstanceType<NiimModule["NiimbotBluetoothClient"]>;
 type PrintTaskName = NonNullable<
   ReturnType<BluetoothClient["getPrintTaskType"]>
 >;
+type BluetoothRequestOptions = {
+  acceptAllDevices?: boolean;
+  filters?: unknown[];
+  optionalServices?: unknown[];
+};
+type BluetoothRequestDevice = (
+  options?: BluetoothRequestOptions,
+) => Promise<unknown>;
+type BluetoothLike = {
+  requestDevice: BluetoothRequestDevice;
+};
 
 type PrinterStatus =
   | "unsupported"
@@ -289,6 +300,53 @@ function hasBluetoothSupport() {
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
 }
 
+function getBluetooth() {
+  if (!hasBluetoothSupport()) return null;
+
+  return (navigator as Navigator & { bluetooth: unknown })
+    .bluetooth as BluetoothLike;
+}
+
+function isAndroidDevice() {
+  return (
+    typeof navigator !== "undefined" &&
+    /Android/i.test(navigator.userAgent)
+  );
+}
+
+async function connectBluetoothClient(client: BluetoothClient) {
+  if (!isAndroidDevice()) {
+    return client.connect();
+  }
+
+  const bluetooth = getBluetooth();
+  if (!bluetooth) {
+    throw new Error(
+      "Browser ini belum mendukung Web Bluetooth. Pakai Chrome atau Edge.",
+    );
+  }
+
+  const requestDevice = bluetooth.requestDevice.bind(bluetooth);
+
+  bluetooth.requestDevice = ((options?: BluetoothRequestOptions) => {
+    const optionalServices =
+      "getServiceUuidFilter" in client ? client.getServiceUuidFilter() : [];
+
+    return requestDevice({
+      ...options,
+      acceptAllDevices: true,
+      filters: undefined,
+      optionalServices,
+    });
+  }) as BluetoothRequestDevice;
+
+  try {
+    return await client.connect();
+  } finally {
+    bluetooth.requestDevice = requestDevice;
+  }
+}
+
 export function NiimbotPrinterProvider({
   children,
 }: {
@@ -341,7 +399,7 @@ export function NiimbotPrinterProvider({
       setMessage("Printer terputus.");
     });
 
-    await client.connect();
+    await connectBluetoothClient(client);
 
     const metadata = client.getModelMetadata();
     const printer = client.getPrinterInfo();
