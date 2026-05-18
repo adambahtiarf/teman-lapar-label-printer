@@ -63,6 +63,20 @@ const PRINT_FONT_FAMILY = '"Geist Mono", "Geist Mono Fallback"';
 
 const PrinterContext = createContext<PrinterContextValue | null>(null);
 
+let niimModule: NiimModule | null = null;
+let niimModulePromise: Promise<NiimModule> | null = null;
+
+function preloadNiimModule() {
+  if (!niimModulePromise) {
+    niimModulePromise = import("@mmote/niimbluelib").then((module) => {
+      niimModule = module;
+      return module;
+    });
+  }
+
+  return niimModulePromise;
+}
+
 function mmToPx(mm: number, dpi: number) {
   return Math.round((mm / 25.4) * dpi);
 }
@@ -286,6 +300,8 @@ export function NiimbotPrinterProvider({
   const [printerInfo, setPrinterInfo] = useState<string | null>(null);
 
   useEffect(() => {
+    void preloadNiimModule().catch(() => undefined);
+
     return () => {
       void sessionRef.current?.client.disconnect().catch(() => undefined);
       sessionRef.current = null;
@@ -309,7 +325,14 @@ export function NiimbotPrinterProvider({
     setStatus("connecting");
     setMessage(null);
 
-    const niim = await import("@mmote/niimbluelib");
+    if (!niimModule) {
+      await preloadNiimModule();
+      throw new Error(
+        "Mesin printer sudah siap. Tap Print sekali lagi untuk pilih printer Bluetooth.",
+      );
+    }
+
+    const niim = niimModule;
     const client = new niim.NiimbotBluetoothClient();
     client.on("disconnect", () => {
       sessionRef.current = null;
