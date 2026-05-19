@@ -28,6 +28,10 @@ function getPreferredTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
+function getServerTheme(): Theme {
+  return "light"
+}
+
 function subscribe(callback: () => void) {
   if (typeof window === "undefined") return () => {}
 
@@ -46,7 +50,7 @@ function subscribe(callback: () => void) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const theme = useSyncExternalStore(subscribe, getPreferredTheme, () => "light")
+  const theme: Theme = useSyncExternalStore(subscribe, getPreferredTheme, getServerTheme)
 
   useEffect(() => {
     applyTheme(theme)
