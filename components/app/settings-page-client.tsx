@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { FormSubmitButton } from "@/components/app/form-submit-button"
 import { PageHeader } from "@/components/app/page-header"
 import { QueryErrorState, SettingsListSkeleton } from "@/components/app/page-states"
+import { ThemeSwitch } from "@/components/app/theme-switch"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -126,6 +127,8 @@ export function SettingsPageClient() {
           <CardTitle>General</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <ThemeSwitch />
+          <Separator />
           <p>Labels print directly to NIIMBOT over Bluetooth at 50mm x 30mm.</p>
           <p>The printer status at the top of the app turns green when online and red when disconnected.</p>
           <p>
